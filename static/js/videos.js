@@ -79,9 +79,8 @@ function searchVideos() {
     if (channelId) {
         url += `&channel_id=${channelId}`;
     }
-    }
 
-    $.get(`/api/videos/search?q=${encodeURIComponent(query)}`, function(data) {
+    $.get(url, function(data) {
         displayVideos(data);
     }).fail(function() {
         $('#videosList').html('<p class="text-danger">Search failed</p>');
