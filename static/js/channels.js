@@ -2,6 +2,7 @@
 
 $(document).ready(function() {
     loadChannels();
+    loadChannelsForVideoSelect();
 
     // Filter by active only
     $('#showActiveOnly').change(function() {
@@ -304,4 +305,97 @@ function deleteChannel(channelId, channelName) {
             alert('Failed to delete channel: ' + (xhr.responseJSON?.detail || 'Unknown error'));
         }
     });
+}
+
+function loadChannelsForVideoSelect() {
+    $.get('/api/channels?limit=100', function(data) {
+        const select = $('#videoChannelSelect');
+        select.empty();
+        select.append('<option value="">-- Select a channel --</option>');
+
+        data.forEach(function(channel) {
+            select.append(`<option value="${channel.id}">${channel.channel_name}</option>`);
+        });
+    }).fail(function() {
+        console.error('Failed to load channels for video select');
+    });
+}
+
+function addVideo() {
+    const videoUrl = $('#videoUrl').val().trim();
+    const channelId = $('#videoChannelSelect').val();
+    const autoSummarize = $('#autoSummarize').is(':checked');
+
+    // Validate required fields
+    if (!videoUrl) {
+        alert('Please enter a YouTube video URL');
+        return;
+    }
+
+    if (!channelId) {
+        alert('Please select a channel');
+        return;
+    }
+
+    // Extract video ID from URL
+    const videoId = extractVideoId(videoUrl);
+    if (!videoId) {
+        alert('Invalid YouTube URL. Please enter a valid YouTube video URL.');
+        return;
+    }
+
+    // Show loading state
+    const $button = $('#addVideoModal .btn-success');
+    const originalText = $button.html();
+    $button.html('<span class="spinner-border spinner-border-sm me-2"></span>Adding video...').prop('disabled', true);
+
+    // Add video via API
+    $.ajax({
+        url: '/api/videos/add-single',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            video_url: videoUrl,
+            video_id: videoId,
+            channel_id: parseInt(channelId),
+            auto_summarize: autoSummarize
+        }),
+        success: function(response) {
+            alert('Video added successfully!');
+            $('#addVideoModal').modal('hide');
+            $('#addVideoForm')[0].reset();
+            $button.html(originalText).prop('disabled', false);
+            loadChannels(); // Refresh to show updated video count
+        },
+        error: function(xhr) {
+            $button.html(originalText).prop('disabled', false);
+            if (xhr.status === 400 && xhr.responseJSON?.detail?.includes('already exists')) {
+                alert('This video already exists in the database.');
+            } else {
+                alert('Failed to add video: ' + (xhr.responseJSON?.detail || 'Unknown error'));
+            }
+        }
+    });
+}
+
+function extractVideoId(url) {
+    // Try multiple URL formats
+
+    // Format 1: https://www.youtube.com/watch?v=VIDEO_ID
+    let match = url.match(/[?&]v=([^&]+)/);
+    if (match) return match[1];
+
+    // Format 2: https://youtu.be/VIDEO_ID
+    match = url.match(/youtu\.be\/([^?]+)/);
+    if (match) return match[1];
+
+    // Format 3: https://www.youtube.com/embed/VIDEO_ID
+    match = url.match(/youtube\.com\/embed\/([^?]+)/);
+    if (match) return match[1];
+
+    // Format 4: Just the video ID
+    match = url.match(/^([a-zA-Z0-9_-]{11})$/);
+    if (match) return match[1];
+
+    return null;
 }
