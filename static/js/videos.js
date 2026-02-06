@@ -178,13 +178,17 @@ function createVideoCard(video) {
                     <i class="bi bi-hand-thumbs-up"></i> ${likes}
                 </p>
                 ${keywords ? `<div class="mb-2">${keywords}</div>` : ''}
-                <div class="mb-2">${summaryBadge}</div>
                 ${video.summary_text ? `
-                <div class="mb-2">
-                    <strong>Summary:</strong>
-                    <p class="text-truncate-3">${video.summary_text}</p>
+                <div class="mb-3 p-3 bg-light border-start border-4 border-success">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="bi bi-stars text-success me-2"></i>
+                        <strong class="text-success">AI Summary</strong>
+                    </div>
+                    <p class="mb-0 text-dark">${video.summary_text}</p>
                 </div>
-                ` : ''}
+                ` : `
+                <div class="mb-2">${summaryBadge}</div>
+                `}
                 <div class="btn-group">
                     <button class="btn btn-sm btn-primary" onclick="viewVideoDetails(${video.id})">
                         <i class="bi bi-eye"></i> View Details
