@@ -3,6 +3,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
+from pydantic import BaseModel
 import os
 import tempfile
 
@@ -15,6 +16,87 @@ from app.services.crawler_service import CrawlerService
 from app.services.export_service import ExportService
 
 router = APIRouter()
+
+
+class AddSingleVideoRequest(BaseModel):
+    video_url: str
+    video_id: str
+    channel_id: int
+    auto_summarize: bool = False
+
+
+@router.post("/add-single")
+async def add_single_video(
+    request: AddSingleVideoRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
+    """Add a single video by URL"""
+    from app.services.youtube_service import YouTubeService
+
+    # Check if video already exists
+    existing_video = db.query(Video).filter(Video.video_id == request.video_id).first()
+    if existing_video:
+        raise HTTPException(status_code=400, detail="Video already exists in database")
+
+    # Check if channel exists
+    channel = db.query(Channel).filter(Channel.id == request.channel_id).first()
+    if not channel:
+        raise HTTPException(status_code=404, detail="Channel not found")
+
+    # Fetch video info using YouTubeService
+    youtube_service = YouTubeService()
+
+    try:
+        # Use yt-dlp to get video info
+        import yt_dlp
+        video_url = f"https://www.youtube.com/watch?v={request.video_id}"
+
+        ydl_opts = {
+            'quiet': True,
+            'no_warnings': True,
+        }
+
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(video_url, download=False)
+
+            if not info:
+                raise HTTPException(status_code=404, detail="Video not found on YouTube")
+
+            # Create video object
+            video = Video(
+                video_id=request.video_id,
+                channel_id=request.channel_id,
+                title=info.get('title', ''),
+                description=info.get('description', ''),
+                duration=info.get('duration', 0),
+                published_at=datetime.fromtimestamp(info.get('timestamp', 0)) if info.get('timestamp') else None,
+                view_count=info.get('view_count', 0),
+                like_count=info.get('like_count', 0),
+                comment_count=info.get('comment_count', 0),
+                tags=info.get('tags', []),
+                video_url=video_url,
+                thumbnail_url=info.get('thumbnail', '')
+            )
+
+            db.add(video)
+            db.commit()
+            db.refresh(video)
+
+            # Generate summary if requested
+            if request.auto_summarize:
+                crawler_service = CrawlerService(db)
+                background_tasks.add_task(crawler_service.summarize_video, video)
+
+            return {
+                "message": "Video added successfully",
+                "video_id": video.id,
+                "title": video.title,
+                "auto_summarize": request.auto_summarize
+            }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch video info: {str(e)}")
 
 
 @router.get("/", response_model=List[VideoResponse])
