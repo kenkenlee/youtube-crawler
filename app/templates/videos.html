@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Videos - YouTube Crawler{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Videos</h1>
+            <button class="btn btn-primary" onclick="exportVideos()">
+                <i class="bi bi-download"></i> Export
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Search and Filters -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <input type="text" class="form-control" id="searchQuery" placeholder="Search videos...">
+    </div>
+    <div class="col-md-3">
+        <select class="form-select" id="channelFilter">
+            <option value="">All Channels</option>
+            <!-- Populated dynamically -->
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select class="form-select" id="summaryFilter">
+            <option value="">All Videos</option>
+            <option value="true">With Summary</option>
+            <option value="false">Without Summary</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <button class="btn btn-primary w-100" onclick="searchVideos()">
+            <i class="bi bi-search"></i> Search
+        </button>
+    </div>
+</div>
+
+<!-- Videos List -->
+<div class="row">
+    <div class="col-12">
+        <div id="videosList">
+            <p class="text-muted">Loading videos...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Pagination -->
+<div class="row">
+    <div class="col-12">
+        <nav>
+            <ul class="pagination justify-content-center" id="pagination">
+                <!-- Populated dynamically -->
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<!-- Video Details Modal -->
+<div class="modal fade" id="videoDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="videoDetailsTitle">Video Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="videoDetailsContent">
+                    <p class="text-muted">Loading...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="regenerateSummaryBtn" onclick="regenerateSummary()">
+                    <i class="bi bi-arrow-clockwise"></i> Regenerate Summary
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/videos.js?v=5"></script>
+{% endblock %}

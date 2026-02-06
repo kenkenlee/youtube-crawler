@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - YouTube Crawler{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">Dashboard</h1>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <h5 class="card-title">Total Channels</h5>
+                <h2 id="total-channels">0</h2>
+                <small id="active-channels">0 active</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <h5 class="card-title">Total Videos</h5>
+                <h2 id="total-videos">0</h2>
+                <small id="summarized-videos">0 summarized</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <h5 class="card-title">Active Sessions</h5>
+                <h2 id="active-sessions">0</h2>
+                <small>Currently running</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <h5 class="card-title">Completed Sessions</h5>
+                <h2 id="completed-sessions">0</h2>
+                <small id="failed-sessions">0 failed</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <button class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#newCrawlModal">
+                    <i class="bi bi-play-circle"></i> Start New Crawl
+                </button>
+                <a href="/channels" class="btn btn-secondary me-2">
+                    <i class="bi bi-plus-circle"></i> Add Channel
+                </a>
+                <button class="btn btn-info" onclick="refreshDashboard()">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Activity</h5>
+            </div>
+            <div class="card-body">
+                <div id="recent-activity" class="list-group">
+                    <p class="text-muted">Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Top Channels</h5>
+            </div>
+            <div class="card-body">
+                <div id="top-channels" class="list-group">
+                    <p class="text-muted">Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Daily Summary Chart -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Last 7 Days Activity</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="dailyChart" height="80"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- New Crawl Modal -->
+<div class="modal fade" id="newCrawlModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Start New Crawl Session</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="newCrawlForm">
+                    <div class="mb-3">
+                        <label class="form-label">Session Name</label>
+                        <input type="text" class="form-control" id="sessionName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Select Channels</label>
+                        <select class="form-select" id="channelSelect" multiple size="5" required>
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Filter Keywords (optional, comma-separated)</label>
+                        <input type="text" class="form-control" id="filterKeywords" placeholder="AI, machine learning, tutorial">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="startCrawl()">Start Crawl</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.0.0/dist/chart.umd.min.js"></script>
+<script src="/static/js/dashboard.js"></script>
+{% endblock %}

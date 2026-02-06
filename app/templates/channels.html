@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Channels - YouTube Crawler{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Channels</h1>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addChannelModal">
+                <i class="bi bi-plus-circle"></i> Add Channel
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Channels List -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">All Channels</h5>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="showActiveOnly">
+                        <label class="form-check-label" for="showActiveOnly">
+                            Show Active Only
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="channelsList">
+                    <p class="text-muted">Loading channels...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Channel Modal -->
+<div class="modal fade" id="addChannelModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Channel</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addChannelForm">
+                    <div class="mb-3">
+                        <label class="form-label">Reference ID *</label>
+                        <input type="text" class="form-control" id="channelId" placeholder="e.g., tech-channel-1, mkbhd, veritasium" required>
+                        <small class="form-text text-muted">Your own unique identifier for this channel (letters, numbers, hyphens)</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Channel Name *</label>
+                        <input type="text" class="form-control" id="channelName" placeholder="e.g., MKBHD, Veritasium" required>
+                        <small class="form-text text-muted">Display name for the channel</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">YouTube Channel URL *</label>
+                        <input type="url" class="form-control" id="channelUrl" placeholder="https://www.youtube.com/@channelname" required>
+                        <small class="form-text text-muted">Any YouTube channel URL format</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description (optional)</label>
+                        <textarea class="form-control" id="channelDescription" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Filter Keywords (comma-separated)</label>
+                        <input type="text" class="form-control" id="channelKeywords" placeholder="AI, machine learning, tutorial">
+                        <small class="form-text text-muted">Videos matching these keywords will be prioritized</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Crawl Frequency</label>
+                        <select class="form-select" id="crawlFrequency">
+                            <option value="manual" selected>Manual</option>
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                        </select>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="crawlEnabled" checked>
+                        <label class="form-check-label" for="crawlEnabled">
+                            Enable crawling for this channel
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="addChannel()">Add Channel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Channel Modal -->
+<div class="modal fade" id="editChannelModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Channel</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editChannelForm">
+                    <input type="hidden" id="editChannelId">
+                    <div class="mb-3">
+                        <label class="form-label">Channel Name</label>
+                        <input type="text" class="form-control" id="editChannelName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" id="editChannelDescription" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Filter Keywords (comma-separated)</label>
+                        <input type="text" class="form-control" id="editChannelKeywords">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Crawl Frequency</label>
+                        <select class="form-select" id="editCrawlFrequency">
+                            <option value="manual">Manual</option>
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                        </select>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="editCrawlEnabled">
+                        <label class="form-check-label" for="editCrawlEnabled">
+                            Enable crawling for this channel
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="updateChannel()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/channels.js"></script>
+{% endblock %}
