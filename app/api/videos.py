@@ -55,10 +55,15 @@ def search_videos(
     q: str = Query(..., min_length=1),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
+    channel_id: Optional[int] = None,
     db: Session = Depends(get_db)
 ):
     """Search videos by keyword"""
     query = db.query(Video).join(Channel)
+
+    # Filter by channel if specified
+    if channel_id:
+        query = query.filter(Video.channel_id == channel_id)
 
     search_term = f'%{q.lower()}%'
     query = query.filter(
