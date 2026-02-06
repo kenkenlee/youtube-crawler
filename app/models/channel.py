@@ -13,6 +13,7 @@ class Channel(Base):
     channel_name = Column(String(500), nullable=False)
     channel_url = Column(String(500), nullable=False)
     description = Column(Text, nullable=True)
+    thumbnail_url = Column(String(500), nullable=True)  # Channel icon/avatar URL
     keywords = Column(JSON, default=list)  # List of keywords for filtering
     crawl_enabled = Column(Boolean, default=True)
     crawl_frequency = Column(String(50), default="manual")  # daily/weekly/manual

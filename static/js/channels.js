@@ -44,12 +44,9 @@ function createChannelCard(channel) {
         ? channel.keywords.map(k => `<span class="badge bg-info me-1">${k}</span>`).join('')
         : '<span class="text-muted small">No keywords</span>';
 
-    // Get proper YouTube channel icon URL
-    // YouTube channel icons are available at: https://yt3.googleusercontent.com/ytc/[channel-id]
-    // Or we can use a generic YouTube icon as fallback
-    const channelIconUrl = channel.youtube_channel_id
-        ? `https://yt3.googleusercontent.com/ytc/${channel.youtube_channel_id}=s88-c-k-c0x00ffffff-no-rj`
-        : 'https://www.gstatic.com/youtube/img/branding/youtubelogo/svg/youtubelogo.svg';
+    // Use the thumbnail_url from database if available, otherwise use fallback
+    const channelIconUrl = channel.thumbnail_url ||
+        'https://www.gstatic.com/youtube/img/branding/youtubelogo/svg/youtubelogo.svg';
 
     return `
         <div class="channel-card-compact">
