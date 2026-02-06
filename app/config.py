@@ -19,6 +19,12 @@ class Settings(BaseSettings):
     OPENAI_MODEL: str = "gpt-4"
     OPENAI_MAX_TOKENS: int = 1000
 
+    # DeepSeek API (alternative to OpenAI)
+    DEEPSEEK_API_KEY: Optional[str] = None
+    DEEPSEEK_BASE_URL: str = "https://api.deepseek.com"
+    DEEPSEEK_MODEL: str = "deepseek-chat"
+    USE_DEEPSEEK: bool = False
+
     # Crawler Settings
     MAX_CONCURRENT_CRAWLS: int = 3
     MAX_VIDEOS_PER_CHANNEL: int = 50

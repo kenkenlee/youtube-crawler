@@ -10,9 +10,24 @@ logger = logging.getLogger(__name__)
 class SummarizerService:
     def __init__(self):
         self.client = None
-        if settings.OPENAI_API_KEY:
+        self.model = settings.OPENAI_MODEL
+
+        # Use DeepSeek if enabled, otherwise use OpenAI
+        if settings.USE_DEEPSEEK and settings.DEEPSEEK_API_KEY:
+            try:
+                self.client = OpenAI(
+                    api_key=settings.DEEPSEEK_API_KEY,
+                    base_url=settings.DEEPSEEK_BASE_URL
+                )
+                self.model = settings.DEEPSEEK_MODEL
+                logger.info("Initialized DeepSeek API client")
+            except Exception as e:
+                logger.error(f"Failed to initialize DeepSeek client: {e}")
+        elif settings.OPENAI_API_KEY:
             try:
                 self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
+                self.model = settings.OPENAI_MODEL
+                logger.info("Initialized OpenAI API client")
             except Exception as e:
                 logger.error(f"Failed to initialize OpenAI client: {e}")
 
@@ -53,7 +68,7 @@ class SummarizerService:
 
         try:
             response = self.client.chat.completions.create(
-                model=settings.OPENAI_MODEL,
+                model=self.model,
                 messages=[
                     {"role": "system", "content": "You are a helpful assistant that summarizes video transcripts clearly and concisely."},
                     {"role": "user", "content": f"{prompt}\n\n{transcript}"}
@@ -111,7 +126,7 @@ class SummarizerService:
         for i, chunk in enumerate(chunks):
             try:
                 response = self.client.chat.completions.create(
-                    model=settings.OPENAI_MODEL,
+                    model=self.model,
                     messages=[
                         {"role": "system", "content": "You are a helpful assistant that summarizes video transcript segments."},
                         {"role": "user", "content": f"Summarize this part of a video transcript:\n\n{chunk}"}
@@ -140,7 +155,7 @@ class SummarizerService:
                 final_prompt = "Combine the following summaries into a single list of bullet points:"
 
             response = self.client.chat.completions.create(
-                model=settings.OPENAI_MODEL,
+                model=self.model,
                 messages=[
                     {"role": "system", "content": "You are a helpful assistant that creates comprehensive summaries."},
                     {"role": "user", "content": f"{final_prompt}\n\n{combined_text}"}
@@ -173,7 +188,7 @@ class SummarizerService:
 
         try:
             response = self.client.chat.completions.create(
-                model=settings.OPENAI_MODEL,
+                model=self.model,
                 messages=[
                     {"role": "system", "content": "You are a helpful assistant that summarizes video content."},
                     {"role": "user", "content": f"Based on this video title and description, provide a brief summary:\n\nTitle: {title}\n\nDescription: {description}"}
