@@ -125,17 +125,25 @@
                 <form id="newCrawlForm">
                     <div class="mb-3">
                         <label class="form-label">Session Name</label>
-                        <input type="text" class="form-control" id="sessionName" required>
+                        <input type="text" class="form-control" id="sessionName" readonly>
+                        <small class="form-text text-muted">Auto-generated based on your selections</small>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Select Channels</label>
+                        <label class="form-label">Select Channels *</label>
                         <select class="form-select" id="channelSelect" multiple size="5" required>
                             <!-- Populated dynamically -->
                         </select>
+                        <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple channels</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Max Videos Per Channel</label>
+                        <input type="number" class="form-control" id="maxVideos" value="5" min="1" max="100" required>
+                        <small class="form-text text-muted">Maximum number of videos to crawl from each channel (default: 5)</small>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Filter Keywords (optional, comma-separated)</label>
                         <input type="text" class="form-control" id="filterKeywords" placeholder="AI, machine learning, tutorial">
+                        <small class="form-text text-muted">Only crawl videos matching these keywords</small>
                     </div>
                 </form>
             </div>
