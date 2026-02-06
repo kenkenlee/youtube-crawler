@@ -9,8 +9,11 @@ $(document).ready(function() {
     const channelId = urlParams.get('channel_id');
     const sessionId = urlParams.get('session_id');
 
+    // Store the channel filter from URL
     if (channelId) {
         $('#channelFilter').val(channelId);
+        // Store in a global variable to persist the filter
+        window.currentChannelFilter = channelId;
     }
 
     // THEN load videos and channels filter
@@ -23,12 +26,32 @@ $(document).ready(function() {
             searchVideos();
         }
     });
+
+    // When channel filter changes, update the URL
+    $('#channelFilter').change(function() {
+        const selectedChannel = $(this).val();
+        if (selectedChannel) {
+            window.currentChannelFilter = selectedChannel;
+            // Update URL without reloading
+            const newUrl = new URL(window.location);
+            newUrl.searchParams.set('channel_id', selectedChannel);
+            window.history.pushState({}, '', newUrl);
+        } else {
+            window.currentChannelFilter = null;
+            // Remove channel_id from URL
+            const newUrl = new URL(window.location);
+            newUrl.searchParams.delete('channel_id');
+            window.history.pushState({}, '', newUrl);
+        }
+        loadVideos();
+    });
 });
 
 function loadVideos(page = 0) {
     const limit = 20;
     const skip = page * limit;
-    const channelId = $('#channelFilter').val();
+    // Use the stored channel filter or get from dropdown
+    const channelId = window.currentChannelFilter || $('#channelFilter').val();
     const hasSummary = $('#summaryFilter').val();
 
     let url = `/api/videos?skip=${skip}&limit=${limit}`;
@@ -48,6 +71,14 @@ function searchVideos() {
     if (!query || query.trim() === '') {
         loadVideos();
         return;
+    }
+
+    // Include channel filter in search if present
+    const channelId = window.currentChannelFilter || $('#channelFilter').val();
+    let url = `/api/videos/search?q=${encodeURIComponent(query)}`;
+    if (channelId) {
+        url += `&channel_id=${channelId}`;
+    }
     }
 
     $.get(`/api/videos/search?q=${encodeURIComponent(query)}`, function(data) {

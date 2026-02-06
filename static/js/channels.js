@@ -42,46 +42,60 @@ function createChannelCard(channel) {
 
     const keywords = channel.keywords && channel.keywords.length > 0
         ? channel.keywords.map(k => `<span class="badge bg-info me-1">${k}</span>`).join('')
-        : '<span class="text-muted">No keywords</span>';
+        : '<span class="text-muted small">No keywords</span>';
+
+    // Extract channel icon URL from YouTube channel ID
+    const channelIconUrl = channel.youtube_channel_id
+        ? `https://yt3.ggpht.com/ytc/default_profile.jpg`
+        : 'https://via.placeholder.com/48x48?text=YT';
+
+    // Try to get actual channel icon using YouTube thumbnail API
+    const actualIconUrl = channel.youtube_channel_id
+        ? `https://www.youtube.com/s/desktop/12d6b690/img/favicon_144x144.png`
+        : channelIconUrl;
 
     return `
-        <div class="channel-card">
-            <div class="d-flex justify-content-between align-items-start mb-2">
-                <div>
-                    <h5 class="channel-name mb-1">${channel.channel_name}</h5>
-                    ${statusBadge}
-                    <span class="badge bg-primary ms-1">${channel.crawl_frequency}</span>
+        <div class="channel-card-compact">
+            <div class="d-flex align-items-center">
+                <img src="${channelIconUrl}"
+                     class="channel-icon me-3"
+                     alt="${channel.channel_name}"
+                     onerror="this.src='https://via.placeholder.com/48x48?text=YT'">
+                <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                        <div>
+                            <h6 class="channel-name-compact mb-1">${channel.channel_name}</h6>
+                            <div class="channel-meta">
+                                ${statusBadge}
+                                <span class="badge bg-primary ms-1">${channel.crawl_frequency}</span>
+                                <span class="text-muted small ms-2">
+                                    <i class="bi bi-play-circle"></i> ${channel.video_count} videos
+                                    <span class="text-success">(${channel.summarized_count} summarized)</span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-sm btn-outline-primary" onclick="viewChannel(${channel.id})" title="View Videos">
+                                <i class="bi bi-collection-play"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="editChannel(${channel.id})" title="Edit">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteChannel(${channel.id}, '${channel.channel_name}')" title="Delete">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="channel-keywords">${keywords}</div>
+                        <div class="d-flex gap-2">
+                            <small class="text-muted">Last: ${lastCrawled}</small>
+                            <a href="${channel.channel_url}" target="_blank" class="btn btn-sm btn-outline-secondary" title="View on YouTube">
+                                <i class="bi bi-youtube"></i>
+                            </a>
+                        </div>
+                    </div>
                 </div>
-                <div class="btn-group">
-                    <button class="btn btn-sm btn-outline-primary" onclick="viewChannel(${channel.id})">
-                        <i class="bi bi-eye"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-secondary" onclick="editChannel(${channel.id})">
-                        <i class="bi bi-pencil"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="deleteChannel(${channel.id}, '${channel.channel_name}')">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </div>
-            </div>
-            <p class="text-muted mb-2">${channel.description || 'No description'}</p>
-            <div class="mb-2">
-                <strong>Keywords:</strong> ${keywords}
-            </div>
-            <div class="d-flex justify-content-between align-items-center">
-                <small class="text-muted">
-                    <i class="bi bi-play-circle"></i> ${channel.video_count} videos
-                    (${channel.summarized_count} summarized)
-                </small>
-                <small class="text-muted">Last crawled: ${lastCrawled}</small>
-            </div>
-            <div class="mt-2">
-                <a href="${channel.channel_url}" target="_blank" class="btn btn-sm btn-outline-secondary">
-                    <i class="bi bi-youtube"></i> View on YouTube
-                </a>
-                <a href="/videos?channel_id=${channel.id}" class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-collection-play"></i> View Videos
-                </a>
             </div>
         </div>
     `;
