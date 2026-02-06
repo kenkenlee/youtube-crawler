@@ -150,15 +150,55 @@ function loadChannelsForCrawl() {
         select.empty();
 
         data.forEach(function(channel) {
-            select.append(`<option value="${channel.id}">${channel.channel_name}</option>`);
+            select.append(`<option value="${channel.id}" data-name="${channel.channel_name}">${channel.channel_name}</option>`);
         });
+
+        // Update session name when channels or keywords change
+        select.change(updateSessionName);
+        $('#filterKeywords').on('input', updateSessionName);
+        $('#maxVideos').on('input', updateSessionName);
+    }).fail(function() {
+        console.error('Failed to load channels');
     });
+}
+
+function updateSessionName() {
+    const selectedOptions = $('#channelSelect option:selected');
+    const keywords = $('#filterKeywords').val().trim();
+    const maxVideos = $('#maxVideos').val();
+
+    if (selectedOptions.length === 0) {
+        $('#sessionName').val('');
+        return;
+    }
+
+    // Get channel names
+    const channelNames = [];
+    selectedOptions.each(function() {
+        channelNames.push($(this).data('name'));
+    });
+
+    // Format: "ChannelName1, ChannelName2 - 2026-02-07 23:45 - keyword1, keyword2 - Max5"
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10); // YYYY-MM-DD
+    const timeStr = now.toTimeString().slice(0, 5); // HH:MM
+
+    let sessionName = channelNames.join(', ') + ' - ' + dateStr + ' ' + timeStr;
+
+    if (keywords) {
+        sessionName += ' - ' + keywords;
+    }
+
+    sessionName += ' - Max' + maxVideos;
+
+    $('#sessionName').val(sessionName);
 }
 
 function startCrawl() {
     const sessionName = $('#sessionName').val();
     const selectedChannels = $('#channelSelect').val();
     const keywords = $('#filterKeywords').val();
+    const maxVideos = parseInt($('#maxVideos').val()) || 5;
 
     if (!sessionName || !selectedChannels || selectedChannels.length === 0) {
         alert('Please fill in all required fields');
@@ -171,7 +211,8 @@ function startCrawl() {
         session_name: sessionName,
         session_type: 'manual',
         channel_ids: selectedChannels.map(id => parseInt(id)),
-        filter_keywords: keywordsList
+        filter_keywords: keywordsList,
+        max_videos_per_channel: maxVideos
     };
 
     $.ajax({
