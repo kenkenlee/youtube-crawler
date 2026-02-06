@@ -32,7 +32,7 @@ async def add_single_video(
     db: Session = Depends(get_db)
 ):
     """Add a single video by URL"""
-    from app.services.youtube_service import YouTubeService
+    import yt_dlp
 
     # Check if video already exists
     existing_video = db.query(Video).filter(Video.video_id == request.video_id).first()
@@ -44,12 +44,7 @@ async def add_single_video(
     if not channel:
         raise HTTPException(status_code=404, detail="Channel not found")
 
-    # Fetch video info using YouTubeService
-    youtube_service = YouTubeService()
-
     try:
-        # Use yt-dlp to get video info
-        import yt_dlp
         video_url = f"https://www.youtube.com/watch?v={request.video_id}"
 
         ydl_opts = {

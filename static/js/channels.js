@@ -1,18 +1,25 @@
 // Channels Management JavaScript
 
+let currentChannelPage = 0;
+
 $(document).ready(function() {
     loadChannels();
     loadChannelsForVideoSelect();
 
     // Filter by active only
     $('#showActiveOnly').change(function() {
+        currentChannelPage = 0;
         loadChannels();
     });
 });
 
-function loadChannels() {
+function loadChannels(page = 0) {
     const showActiveOnly = $('#showActiveOnly').is(':checked');
-    const url = showActiveOnly ? '/api/channels?crawl_enabled=true' : '/api/channels';
+    const limit = 50;
+    const skip = page * limit;
+
+    let url = `/api/channels?skip=${skip}&limit=${limit}`;
+    if (showActiveOnly) url += '&crawl_enabled=true';
 
     $.get(url, function(data) {
         const container = $('#channelsList');
@@ -27,9 +34,51 @@ function loadChannels() {
             const channelCard = createChannelCard(channel);
             container.append(channelCard);
         });
+
+        currentChannelPage = page;
+        updateChannelPagination(data.length, limit, page);
     }).fail(function() {
         $('#channelsList').html('<p class="text-danger">Failed to load channels</p>');
     });
+}
+
+function updateChannelPagination(itemCount, limit, currentPage) {
+    const hasMore = itemCount === limit;
+    const hasPrevious = currentPage > 0;
+
+    let paginationHtml = '<nav aria-label="Channel pagination"><ul class="pagination justify-content-center mt-4">';
+
+    // Previous button
+    if (hasPrevious) {
+        paginationHtml += `<li class="page-item"><a class="page-link" href="#" onclick="loadChannels(${currentPage - 1}); return false;">Previous</a></li>`;
+    } else {
+        paginationHtml += '<li class="page-item disabled"><span class="page-link">Previous</span></li>';
+    }
+
+    // Page numbers
+    const startPage = Math.max(0, currentPage - 2);
+    const endPage = currentPage + 2;
+
+    for (let i = startPage; i <= endPage; i++) {
+        if (i === currentPage) {
+            paginationHtml += `<li class="page-item active"><span class="page-link">${i + 1}</span></li>`;
+        } else {
+            paginationHtml += `<li class="page-item"><a class="page-link" href="#" onclick="loadChannels(${i}); return false;">${i + 1}</a></li>`;
+        }
+    }
+
+    // Next button
+    if (hasMore) {
+        paginationHtml += `<li class="page-item"><a class="page-link" href="#" onclick="loadChannels(${currentPage + 1}); return false;">Next</a></li>`;
+    } else {
+        paginationHtml += '<li class="page-item disabled"><span class="page-link">Next</span></li>';
+    }
+
+    paginationHtml += '</ul></nav>';
+
+    // Add or update pagination
+    $('#channelPagination').remove();
+    $('#channelsList').after(`<div id="channelPagination">${paginationHtml}</div>`);
 }
 
 function createChannelCard(channel) {

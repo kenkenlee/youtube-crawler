@@ -48,7 +48,7 @@ $(document).ready(function() {
 });
 
 function loadVideos(page = 0) {
-    const limit = 20;
+    const limit = 50;  // Increased from 20 to 50
     const skip = page * limit;
     // Use the stored channel filter or get from dropdown
     const channelId = window.currentChannelFilter || $('#channelFilter').val();
@@ -61,9 +61,49 @@ function loadVideos(page = 0) {
     $.get(url, function(data) {
         displayVideos(data);
         currentPage = page;
+        updatePagination(data.length, limit, page);
     }).fail(function() {
         $('#videosList').html('<p class="text-danger">Failed to load videos</p>');
     });
+}
+
+function updatePagination(itemCount, limit, currentPage) {
+    const hasMore = itemCount === limit;
+    const hasPrevious = currentPage > 0;
+
+    let paginationHtml = '<nav aria-label="Video pagination"><ul class="pagination justify-content-center mt-4">';
+
+    // Previous button
+    if (hasPrevious) {
+        paginationHtml += `<li class="page-item"><a class="page-link" href="#" onclick="loadVideos(${currentPage - 1}); return false;">Previous</a></li>`;
+    } else {
+        paginationHtml += '<li class="page-item disabled"><span class="page-link">Previous</span></li>';
+    }
+
+    // Page numbers (show current and nearby pages)
+    const startPage = Math.max(0, currentPage - 2);
+    const endPage = currentPage + 2;
+
+    for (let i = startPage; i <= endPage; i++) {
+        if (i === currentPage) {
+            paginationHtml += `<li class="page-item active"><span class="page-link">${i + 1}</span></li>`;
+        } else {
+            paginationHtml += `<li class="page-item"><a class="page-link" href="#" onclick="loadVideos(${i}); return false;">${i + 1}</a></li>`;
+        }
+    }
+
+    // Next button
+    if (hasMore) {
+        paginationHtml += `<li class="page-item"><a class="page-link" href="#" onclick="loadVideos(${currentPage + 1}); return false;">Next</a></li>`;
+    } else {
+        paginationHtml += '<li class="page-item disabled"><span class="page-link">Next</span></li>';
+    }
+
+    paginationHtml += '</ul></nav>';
+
+    // Add or update pagination
+    $('#videoPagination').remove();
+    $('#videosList').after(`<div id="videoPagination">${paginationHtml}</div>`);
 }
 
 function searchVideos() {
