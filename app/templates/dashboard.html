@@ -126,20 +126,63 @@
     </div>
 </div>
 
-<!-- Keyboard Shortcuts Help -->
+<!-- Dashboard Controls -->
 <div class="row mt-3">
     <div class="col-12">
         <div class="card bg-light">
             <div class="card-body py-2">
-                <small class="text-muted">
-                    <strong>Keyboard Shortcuts:</strong>
-                    <kbd>Alt+C</kbd> Channels |
-                    <kbd>Alt+V</kbd> Videos |
-                    <kbd>Alt+S</kbd> Sessions |
-                    <kbd>Alt+N</kbd> New Crawl |
-                    <kbd>Alt+R</kbd> Refresh
-                </small>
+                <div class="d-flex justify-content-between align-items-center flex-wrap">
+                    <div>
+                        <small class="text-muted">
+                            <strong>Keyboard Shortcuts:</strong>
+                            <kbd>Alt+C</kbd> Channels |
+                            <kbd>Alt+V</kbd> Videos |
+                            <kbd>Alt+S</kbd> Sessions |
+                            <kbd>Alt+N</kbd> New Crawl |
+                            <kbd>Alt+R</kbd> Refresh
+                        </small>
+                    </div>
+                    <div class="d-flex gap-2 align-items-center">
+                        <!-- Auto-refresh toggle -->
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="autoRefreshToggle" checked>
+                            <label class="form-check-label" for="autoRefreshToggle">
+                                <small>Auto-refresh</small>
+                            </label>
+                        </div>
+                        <!-- Dark mode toggle -->
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="darkModeToggle">
+                            <label class="form-check-label" for="darkModeToggle">
+                                <small>Dark mode</small>
+                            </label>
+                        </div>
+                        <!-- Export button -->
+                        <button class="btn btn-sm btn-outline-secondary" onclick="exportDashboardData()">
+                            <i class="bi bi-download"></i> Export
+                        </button>
+                        <!-- Filter button -->
+                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#filterModal">
+                            <i class="bi bi-funnel"></i> Filter
+                        </button>
+                    </div>
+                </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Last Updated Indicator -->
+<div class="row mt-2">
+    <div class="col-12">
+        <div class="text-center">
+            <small class="text-muted">
+                Last updated: <span id="lastUpdated">Just now</span>
+                <span id="refreshIndicator" class="ms-2" style="display: none;">
+                    <span class="spinner-border spinner-border-sm text-primary" role="status"></span>
+                    Refreshing...
+                </span>
+            </small>
         </div>
     </div>
 </div>
@@ -265,9 +308,110 @@
     </div>
 </div>
 
+<!-- Filter Modal -->
+<div class="modal fade" id="filterModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Filter Dashboard</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="filterForm">
+                    <div class="mb-3">
+                        <label class="form-label">Date Range</label>
+                        <select class="form-select" id="dateRangeFilter">
+                            <option value="all">All Time</option>
+                            <option value="today">Today</option>
+                            <option value="week" selected>Last 7 Days</option>
+                            <option value="month">Last 30 Days</option>
+                            <option value="custom">Custom Range</option>
+                        </select>
+                    </div>
+                    <div class="mb-3" id="customDateRange" style="display: none;">
+                        <label class="form-label">From</label>
+                        <input type="date" class="form-control" id="dateFrom">
+                        <label class="form-label mt-2">To</label>
+                        <input type="date" class="form-control" id="dateTo">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Session Status</label>
+                        <select class="form-select" id="statusFilter">
+                            <option value="all">All Statuses</option>
+                            <option value="completed">Completed</option>
+                            <option value="running">Running</option>
+                            <option value="failed">Failed</option>
+                            <option value="pending">Pending</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Search Keywords</label>
+                        <input type="text" class="form-control" id="searchKeywords" placeholder="Search in activities...">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="clearFilters()">Clear Filters</button>
+                <button type="button" class="btn btn-primary" onclick="applyFilters()">Apply Filters</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Export Modal -->
+<div class="modal fade" id="exportModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Export Dashboard Data</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Select the format to export dashboard data:</p>
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary" onclick="exportData('json')">
+                        <i class="bi bi-filetype-json"></i> Export as JSON
+                    </button>
+                    <button class="btn btn-outline-success" onclick="exportData('csv')">
+                        <i class="bi bi-filetype-csv"></i> Export as CSV
+                    </button>
+                    <button class="btn btn-outline-info" onclick="exportData('summary')">
+                        <i class="bi bi-file-text"></i> Export Summary Report
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Floating Action Button -->
+<div class="fab-container">
+    <button class="fab-button" id="fabButton" onclick="toggleFabMenu()">
+        <i class="bi bi-plus-lg"></i>
+    </button>
+    <div class="fab-menu" id="fabMenu" style="display: none;">
+        <button class="fab-menu-item" onclick="$('#newCrawlModal').modal('show'); toggleFabMenu();" title="Start New Crawl">
+            <i class="bi bi-play-circle"></i>
+        </button>
+        <button class="fab-menu-item" onclick="window.location.href='/channels'" title="Add Channel">
+            <i class="bi bi-plus-circle"></i>
+        </button>
+        <button class="fab-menu-item" onclick="refreshDashboard()" title="Refresh Dashboard">
+            <i class="bi bi-arrow-clockwise"></i>
+        </button>
+        <button class="fab-menu-item" onclick="exportDashboardData()" title="Export Data">
+            <i class="bi bi-download"></i>
+        </button>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.0.0/dist/chart.umd.min.js"></script>
 <script src="/static/js/dashboard.js?v=2.0"></script>
+<script src="/static/js/dashboard-advanced.js?v=1.0"></script>
 {% endblock %}

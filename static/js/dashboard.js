@@ -1,6 +1,12 @@
 // Dashboard JavaScript
 
 let dailyChart = null;
+let autoRefreshInterval = null;
+let dashboardFilters = {
+    dateRange: 'week',
+    status: 'all',
+    keywords: ''
+};
 
 // Load dashboard on page load
 $(document).ready(function() {
@@ -10,14 +16,16 @@ $(document).ready(function() {
     loadDailyChart();
     loadChannelsForCrawl();
 
-    // Auto-refresh every 30 seconds
-    setInterval(refreshDashboard, 30000);
-
-    // Add keyboard shortcuts
+    // Initialize features
     setupKeyboardShortcuts();
-
-    // Initialize tooltips
     initializeTooltips();
+    initializeDarkMode();
+    initializeAutoRefresh();
+    initializeFilters();
+    updateLastUpdatedTime();
+
+    // Auto-refresh every 30 seconds (if enabled)
+    startAutoRefresh();
 });
 
 // Keyboard shortcuts
