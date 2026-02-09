@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Dashboard Interactive</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>Test Dashboard Interactive Features</h1>
+
+    <h2>Test 1: Click on Channel</h2>
+    <div id="test-channel" onclick="alert('Channel clicked! Function: ' + typeof window.showChannelDetail)" style="cursor: pointer; padding: 10px; background: #eee; margin: 10px 0;">
+        Click me to test channel click
+    </div>
+
+    <h2>Test 2: Click on Activity</h2>
+    <div id="test-activity" onclick="alert('Activity clicked! Function: ' + typeof window.showActivityDetail)" style="cursor: pointer; padding: 10px; background: #eee; margin: 10px 0;">
+        Click me to test activity click
+    </div>
+
+    <h2>Test 3: Check if functions exist</h2>
+    <button onclick="checkFunctions()">Check Functions</button>
+    <div id="results"></div>
+
+    <script>
+        function checkFunctions() {
+            const results = document.getElementById('results');
+            results.innerHTML = `
+                <p>showChannelDetail: ${typeof window.showChannelDetail}</p>
+                <p>showActivityDetail: ${typeof window.showActivityDetail}</p>
+                <p>showChannelContextMenu: ${typeof window.showChannelContextMenu}</p>
+                <p>copyChannelName: ${typeof window.copyChannelName}</p>
+                <p>startChannelCrawl: ${typeof window.startChannelCrawl}</p>
+            `;
+        }
+
+        // Load dashboard.js
+        const script = document.createElement('script');
+        script.src = '/static/js/dashboard.js';
+        script.onload = function() {
+            console.log('Dashboard.js loaded');
+            checkFunctions();
+        };
+        document.head.appendChild(script);
+    </script>
+</body>
+</html>
