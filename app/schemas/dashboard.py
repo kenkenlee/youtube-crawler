@@ -34,3 +34,5 @@ class RecentActivity(BaseModel):
     activity_type: str
     description: str
     status: str
+    session_id: int = None
+    channel_id: int = None

@@ -12,7 +12,7 @@
 <!-- Statistics Cards -->
 <div class="row mb-4">
     <div class="col-md-3">
-        <div class="card text-white bg-primary">
+        <div class="card text-white bg-primary clickable-card" onclick="window.location.href='/channels'" style="cursor: pointer;">
             <div class="card-body">
                 <h5 class="card-title">Total Channels</h5>
                 <h2 id="total-channels">0</h2>
@@ -21,7 +21,7 @@
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card text-white bg-success">
+        <div class="card text-white bg-success clickable-card" onclick="window.location.href='/videos'" style="cursor: pointer;">
             <div class="card-body">
                 <h5 class="card-title">Total Videos</h5>
                 <h2 id="total-videos">0</h2>
@@ -30,7 +30,7 @@
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card text-white bg-info">
+        <div class="card text-white bg-info clickable-card" onclick="window.location.href='/sessions'" style="cursor: pointer;">
             <div class="card-body">
                 <h5 class="card-title">Active Sessions</h5>
                 <h2 id="active-sessions">0</h2>
@@ -39,7 +39,7 @@
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card text-white bg-warning">
+        <div class="card text-white bg-warning clickable-card" onclick="window.location.href='/sessions'" style="cursor: pointer;">
             <div class="card-body">
                 <h5 class="card-title">Completed Sessions</h5>
                 <h2 id="completed-sessions">0</h2>
@@ -63,7 +63,13 @@
                 <a href="/channels" class="btn btn-secondary me-2">
                     <i class="bi bi-plus-circle"></i> Add Channel
                 </a>
-                <button class="btn btn-info" onclick="refreshDashboard()">
+                <a href="/videos" class="btn btn-success me-2">
+                    <i class="bi bi-collection-play"></i> View All Videos
+                </a>
+                <a href="/sessions" class="btn btn-info me-2">
+                    <i class="bi bi-clock-history"></i> View Sessions
+                </a>
+                <button class="btn btn-warning" onclick="refreshDashboard()">
                     <i class="bi bi-arrow-clockwise"></i> Refresh
                 </button>
             </div>
@@ -75,8 +81,11 @@
 <div class="row mb-4">
     <div class="col-md-6">
         <div class="card">
-            <div class="card-header">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Recent Activity</h5>
+                <button class="btn btn-sm btn-outline-primary" onclick="window.location.href='/sessions'" title="View all sessions">
+                    <i class="bi bi-arrow-right"></i>
+                </button>
             </div>
             <div class="card-body">
                 <div id="recent-activity" class="list-group">
@@ -87,8 +96,11 @@
     </div>
     <div class="col-md-6">
         <div class="card">
-            <div class="card-header">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Top Channels</h5>
+                <button class="btn btn-sm btn-outline-primary" onclick="window.location.href='/channels'" title="View all channels">
+                    <i class="bi bi-arrow-right"></i>
+                </button>
             </div>
             <div class="card-body">
                 <div id="top-channels" class="list-group">
@@ -103,8 +115,9 @@
 <div class="row">
     <div class="col-12">
         <div class="card">
-            <div class="card-header">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Last 7 Days Activity</h5>
+                <small class="text-muted">Click on chart to view videos</small>
             </div>
             <div class="card-body">
                 <canvas id="dailyChart" height="80"></canvas>
@@ -113,9 +126,27 @@
     </div>
 </div>
 
+<!-- Keyboard Shortcuts Help -->
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-body py-2">
+                <small class="text-muted">
+                    <strong>Keyboard Shortcuts:</strong>
+                    <kbd>Alt+C</kbd> Channels |
+                    <kbd>Alt+V</kbd> Videos |
+                    <kbd>Alt+S</kbd> Sessions |
+                    <kbd>Alt+N</kbd> New Crawl |
+                    <kbd>Alt+R</kbd> Refresh
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- New Crawl Modal -->
 <div class="modal fade" id="newCrawlModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Start New Crawl Session</h5>
@@ -128,13 +159,46 @@
                         <input type="text" class="form-control" id="sessionName" readonly>
                         <small class="form-text text-muted">Auto-generated based on your selections</small>
                     </div>
+
+                    <!-- Search and Sort Controls -->
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            <label class="form-label">Search Channels</label>
+                            <input type="text" class="form-control" id="channelSearch" placeholder="Search by channel name...">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Sort By</label>
+                            <select class="form-select" id="channelSort">
+                                <option value="name-asc">Name (A-Z)</option>
+                                <option value="name-desc">Name (Z-A)</option>
+                                <option value="videos-desc">Most Videos</option>
+                                <option value="videos-asc">Least Videos</option>
+                                <option value="recent">Recently Crawled</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Channel Selection -->
                     <div class="mb-3">
-                        <label class="form-label">Select Channels *</label>
-                        <select class="form-select" id="channelSelect" multiple size="5" required>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label mb-0">Select Channels *</label>
+                            <div>
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAllChannels()">
+                                    <i class="bi bi-check-all"></i> Select All
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAllChannels()">
+                                    <i class="bi bi-x"></i> Clear
+                                </button>
+                            </div>
+                        </div>
+                        <select class="form-select" id="channelSelect" multiple size="8" required>
                             <!-- Populated dynamically -->
                         </select>
-                        <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple channels</small>
+                        <small class="form-text text-muted">
+                            <span id="selectedCount">0</span> channel(s) selected | Hold Ctrl/Cmd to select multiple
+                        </small>
                     </div>
+
                     <div class="mb-3">
                         <label class="form-label">Max Videos Per Channel</label>
                         <input type="number" class="form-control" id="maxVideos" value="5" min="1" max="100" required>
@@ -155,9 +219,55 @@
     </div>
 </div>
 
+<!-- Channel Detail Modal -->
+<div class="modal fade" id="channelDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="channelDetailTitle">Channel Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="channelDetailBody">
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="viewChannelVideosBtn">View Videos</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Activity Detail Modal -->
+<div class="modal fade" id="activityDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="activityDetailTitle">Activity Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="activityDetailBody">
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="viewSessionDetailsBtn">View Full Session</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.0.0/dist/chart.umd.min.js"></script>
-<script src="/static/js/dashboard.js"></script>
+<script src="/static/js/dashboard.js?v=2.0"></script>
 {% endblock %}

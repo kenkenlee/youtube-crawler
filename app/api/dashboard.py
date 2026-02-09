@@ -139,7 +139,9 @@ def get_recent_activity(limit: int = 20, db: Session = Depends(get_db)):
             timestamp=session.created_at,
             activity_type="session",
             description=description,
-            status=session.status
+            status=session.status,
+            session_id=session.id,
+            channel_id=None
         ))
 
     # Sort by timestamp
