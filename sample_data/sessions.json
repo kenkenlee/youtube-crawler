@@ -1,0 +1,188 @@
+[
+  {
+    "session_name": "Machine",
+    "status": "completed",
+    "channel_ids": [
+      1
+    ],
+    "filter_keywords": [
+      "Machine"
+    ],
+    "total_channels": 1,
+    "processed_channels": 1,
+    "total_videos_found": 1,
+    "videos_processed": 1,
+    "videos_summarized": 0,
+    "error_count": 0,
+    "error_log": null,
+    "created_at": "2026-02-06T02:28:20",
+    "started_at": "2026-02-06T02:28:20.581011",
+    "completed_at": "2026-02-06T02:28:25.235620"
+  },
+  {
+    "session_name": "Light",
+    "status": "completed",
+    "channel_ids": [
+      1
+    ],
+    "filter_keywords": [
+      "Light"
+    ],
+    "total_channels": 1,
+    "processed_channels": 1,
+    "total_videos_found": 4,
+    "videos_processed": 4,
+    "videos_summarized": 0,
+    "error_count": 0,
+    "error_log": null,
+    "created_at": "2026-02-06T02:35:18",
+    "started_at": "2026-02-06T02:35:18.530976",
+    "completed_at": "2026-02-06T02:35:26.124198"
+  },
+  {
+    "session_name": "Mill 1",
+    "status": "completed",
+    "channel_ids": [
+      4
+    ],
+    "filter_keywords": [],
+    "total_channels": 1,
+    "processed_channels": 1,
+    "total_videos_found": 50,
+    "videos_processed": 50,
+    "videos_summarized": 0,
+    "error_count": 0,
+    "error_log": null,
+    "created_at": "2026-02-06T03:45:44",
+    "started_at": "2026-02-06T03:45:45.269102",
+    "completed_at": "2026-02-06T03:47:16.180676"
+  },
+  {
+    "session_name": "Quantum",
+    "status": "completed",
+    "channel_ids": [
+      1
+    ],
+    "filter_keywords": [
+      "quantum"
+    ],
+    "total_channels": 1,
+    "processed_channels": 1,
+    "total_videos_found": 3,
+    "videos_processed": 3,
+    "videos_summarized": 0,
+    "error_count": 0,
+    "error_log": null,
+    "created_at": "2026-02-06T03:47:31",
+    "started_at": "2026-02-06T03:47:32.188172",
+    "completed_at": "2026-02-06T03:47:42.390160"
+  },
+  {
+    "session_name": "SCMP News",
+    "status": "completed",
+    "channel_ids": [
+      5
+    ],
+    "filter_keywords": [],
+    "total_channels": 1,
+    "processed_channels": 1,
+    "total_videos_found": 50,
+    "videos_processed": 50,
+    "videos_summarized": 0,
+    "error_count": 0,
+    "error_log": null,
+    "created_at": "2026-02-06T03:49:43",
+    "started_at": "2026-02-06T03:49:43.396524",
+    "completed_at": "2026-02-06T03:55:34.752103"
+  },
+  {
+    "session_name": "Mill Milk",
+    "status": "completed",
+    "channel_ids": [
+      4
+    ],
+    "filter_keywords": [],
+    "total_channels": 1,
+    "processed_channels": 1,
+    "total_videos_found": 50,
+    "videos_processed": 50,
+    "videos_summarized": 0,
+    "error_count": 0,
+    "error_log": null,
+    "created_at": "2026-02-06T16:29:53",
+    "started_at": "2026-02-06T16:29:54.324403",
+    "completed_at": "2026-02-06T16:31:42.830202"
+  },
+  {
+    "session_name": "My Tech",
+    "status": "completed",
+    "channel_ids": [
+      3
+    ],
+    "filter_keywords": [],
+    "total_channels": 1,
+    "processed_channels": 1,
+    "total_videos_found": 50,
+    "videos_processed": 50,
+    "videos_summarized": 50,
+    "error_count": 0,
+    "error_log": null,
+    "created_at": "2026-02-06T17:44:49",
+    "started_at": "2026-02-06T17:44:51.380578",
+    "completed_at": "2026-02-06T17:55:30.210243"
+  },
+  {
+    "session_name": "AI Coding",
+    "status": "completed",
+    "channel_ids": [
+      2
+    ],
+    "filter_keywords": [],
+    "total_channels": 1,
+    "processed_channels": 1,
+    "total_videos_found": 50,
+    "videos_processed": 50,
+    "videos_summarized": 0,
+    "error_count": 0,
+    "error_log": null,
+    "created_at": "2026-02-06T18:03:28",
+    "started_at": "2026-02-06T18:03:29.998793",
+    "completed_at": "2026-02-06T18:05:41.270682"
+  },
+  {
+    "session_name": "Torres",
+    "status": "completed",
+    "channel_ids": [
+      5
+    ],
+    "filter_keywords": [],
+    "total_channels": 1,
+    "processed_channels": 1,
+    "total_videos_found": 50,
+    "videos_processed": 50,
+    "videos_summarized": 43,
+    "error_count": 0,
+    "error_log": null,
+    "created_at": "2026-02-06T18:13:48",
+    "started_at": "2026-02-06T18:13:49.913994",
+    "completed_at": "2026-02-06T18:22:10.429607"
+  },
+  {
+    "session_name": "黃劍每日觀察 - 2026-02-06 07:22 - Max5",
+    "status": "completed",
+    "channel_ids": [
+      6
+    ],
+    "filter_keywords": [],
+    "total_channels": 1,
+    "processed_channels": 1,
+    "total_videos_found": 50,
+    "videos_processed": 50,
+    "videos_summarized": 48,
+    "error_count": 0,
+    "error_log": null,
+    "created_at": "2026-02-06T23:22:47",
+    "started_at": "2026-02-06T23:22:48.372930",
+    "completed_at": "2026-02-06T23:38:43.184412"
+  }
+]
