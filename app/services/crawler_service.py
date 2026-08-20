@@ -171,31 +171,56 @@ class CrawlerService:
             video = existing_video
             logger.info(f"Updating existing video: {video.title}")
         else:
-            # Get detailed video information
+            # Use basic info from list_channel_videos (more reliable without API key)
+            # Fallback to get_video_details only if needed
             detailed_info = self.youtube_service.get_video_details(video_id)
-            if not detailed_info:
-                logger.warning(f"Could not get details for video {video_id}")
+            
+            if detailed_info:
+                title = detailed_info.get('title', video_info.get('title', ''))
+                description = detailed_info.get('description', video_info.get('description', ''))
+                duration = detailed_info.get('duration', video_info.get('duration', 0))
+                published_at = detailed_info.get('published_at')
+                view_count = detailed_info.get('view_count', video_info.get('view_count', 0))
+                like_count = detailed_info.get('like_count', video_info.get('like_count', 0))
+                comment_count = detailed_info.get('comment_count', video_info.get('comment_count', 0))
+                tags = detailed_info.get('tags', video_info.get('tags', []))
+            else:
+                # Use whatever info we have from the list
+                title = video_info.get('title', '')
+                description = video_info.get('description', '')
+                duration = video_info.get('duration', 0)
+                published_at = None
+                view_count = video_info.get('view_count', 0)
+                like_count = video_info.get('like_count', 0)
+                comment_count = video_info.get('comment_count', 0)
+                tags = video_info.get('tags', [])
+            
+            if not title:
+                logger.warning(f"No title for video {video_id}, skipping")
                 return
+
+            # FORCE SAVE: Always try to save even with minimal data
+            logger.info(f"Force-saving video {video_id}: {title[:50]}...")
 
             # Create new video
             video = Video(
                 channel_id=channel.id,
                 video_id=video_id,
-                title=detailed_info.get('title', ''),
-                description=detailed_info.get('description', ''),
-                duration=detailed_info.get('duration', 0),
-                published_at=detailed_info.get('published_at'),
-                view_count=detailed_info.get('view_count', 0),
-                like_count=detailed_info.get('like_count', 0),
-                comment_count=detailed_info.get('comment_count', 0),
-                tags=detailed_info.get('tags', []),
+                title=title,
+                description=description,
+                duration=duration,
+                published_at=published_at,
+                view_count=view_count,
+                like_count=like_count,
+                comment_count=comment_count,
+                tags=tags,
                 matched_keywords=video_info.get('matched_keywords', [])
             )
             self.db.add(video)
             self.db.commit()
             self.db.refresh(video)
 
-            logger.info(f"Created new video: {video.title}")
+            logger.info(f"✅ SUCCESSFULLY SAVED video to DB: {video.title[:60]} (id={video.id})")
 
         # Create session-video relationship
         session_video = SessionVideo(

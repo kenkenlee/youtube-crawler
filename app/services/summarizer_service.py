@@ -1,6 +1,7 @@
-from openai import OpenAI
 from typing import Optional
 import logging
+import requests
+import json
 
 from app.config import settings
 
@@ -9,41 +10,71 @@ logger = logging.getLogger(__name__)
 
 class SummarizerService:
     def __init__(self):
-        self.client = None
+        self.use_openrouter = False
+        self.use_deepseek = False
+        self.use_openai = False
         self.model = settings.OPENAI_MODEL
+        self.api_key = None
+        self.base_url = None
 
-        # Use DeepSeek if enabled, otherwise use OpenAI
-        if settings.USE_DEEPSEEK and settings.DEEPSEEK_API_KEY:
-            try:
-                self.client = OpenAI(
-                    api_key=settings.DEEPSEEK_API_KEY,
-                    base_url=settings.DEEPSEEK_BASE_URL
-                )
-                self.model = settings.DEEPSEEK_MODEL
-                logger.info("Initialized DeepSeek API client")
-            except Exception as e:
-                logger.error(f"Failed to initialize DeepSeek client: {e}")
+        # Priority: OpenRouter > DeepSeek > OpenAI
+        if settings.USE_OPENROUTER and settings.OPENROUTER_API_KEY:
+            self.use_openrouter = True
+            self.api_key = settings.OPENROUTER_API_KEY
+            self.base_url = settings.OPENROUTER_BASE_URL
+            self.model = settings.OPENROUTER_MODEL
+            logger.info(f"Using OpenRouter with model: {self.model}")
+        elif settings.USE_DEEPSEEK and settings.DEEPSEEK_API_KEY:
+            self.use_deepseek = True
+            self.api_key = settings.DEEPSEEK_API_KEY
+            self.base_url = settings.DEEPSEEK_BASE_URL
+            self.model = settings.DEEPSEEK_MODEL
+            logger.info("Using DeepSeek API")
         elif settings.OPENAI_API_KEY:
-            try:
-                self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
-                self.model = settings.OPENAI_MODEL
-                logger.info("Initialized OpenAI API client")
-            except Exception as e:
-                logger.error(f"Failed to initialize OpenAI client: {e}")
+            self.use_openai = True
+            self.api_key = settings.OPENAI_API_KEY
+            self.base_url = "https://api.openai.com/v1"
+            self.model = settings.OPENAI_MODEL
+            logger.info("Using OpenAI API")
+
+    def _make_request(self, prompt: str, max_tokens: int = 1000) -> Optional[str]:
+        """Make direct HTTP request to the configured API"""
+        if not self.api_key:
+            logger.error("No API key configured")
+            return None
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}"
+        }
+
+        if self.use_openrouter:
+            headers["HTTP-Referer"] = "https://localhost"
+            headers["X-Title"] = "YouTube Crawler"
+
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": "You are a helpful assistant that summarizes video content clearly and concisely."},
+                {"role": "user", "content": prompt}
+            ],
+            "max_tokens": max_tokens,
+            "temperature": 0.7
+        }
+
+        try:
+            url = f"{self.base_url}/chat/completions"
+            response = requests.post(url, headers=headers, json=payload, timeout=60)
+            response.raise_for_status()
+            data = response.json()
+            return data["choices"][0]["message"]["content"].strip()
+        except Exception as e:
+            logger.error(f"API request failed: {e}")
+            return None
 
     def summarize_transcript(self, transcript: str, style: str = None) -> Optional[str]:
-        """
-        Generate a summary of a video transcript using OpenAI
-
-        Args:
-            transcript: The video transcript text
-            style: Summary style (concise/detailed/bullet_points)
-
-        Returns:
-            Summary text or None if failed
-        """
-        if not self.client:
-            logger.error("OpenAI client not initialized")
+        if not self.api_key:
+            logger.error("No API key configured for summarization")
             return None
 
         if not transcript or len(transcript.strip()) == 0:
@@ -52,7 +83,6 @@ class SummarizerService:
 
         style = style or settings.SUMMARY_STYLE
 
-        # Prepare prompt based on style
         prompts = {
             'concise': "Provide a concise 2-3 sentence summary of the following video transcript:",
             'detailed': "Provide a detailed summary of the following video transcript, including main points and key takeaways:",
@@ -61,46 +91,18 @@ class SummarizerService:
 
         prompt = prompts.get(style, prompts['concise'])
 
-        # Handle long transcripts by chunking
-        max_chars = 12000  # Leave room for prompt and response
+        max_chars = 12000
         if len(transcript) > max_chars:
             return self.summarize_long_transcript(transcript, style)
 
-        try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": "You are a helpful assistant that summarizes video transcripts clearly and concisely."},
-                    {"role": "user", "content": f"{prompt}\n\n{transcript}"}
-                ],
-                max_tokens=settings.OPENAI_MAX_TOKENS,
-                temperature=0.7
-            )
-
-            summary = response.choices[0].message.content.strip()
-            return summary
-
-        except Exception as e:
-            logger.error(f"Error generating summary: {e}")
-            return None
+        full_prompt = f"{prompt}\n\n{transcript}"
+        return self._make_request(full_prompt, settings.OPENAI_MAX_TOKENS)
 
     def summarize_long_transcript(self, transcript: str, style: str = None) -> Optional[str]:
-        """
-        Summarize a long transcript by chunking and combining summaries
-
-        Args:
-            transcript: The video transcript text
-            style: Summary style
-
-        Returns:
-            Combined summary or None if failed
-        """
-        if not self.client:
+        if not self.api_key:
             return None
 
         style = style or settings.SUMMARY_STYLE
-
-        # Split transcript into chunks
         max_chunk_size = 10000
         words = transcript.split()
         chunks = []
@@ -110,7 +112,6 @@ class SummarizerService:
         for word in words:
             current_chunk.append(word)
             current_size += len(word) + 1
-
             if current_size >= max_chunk_size:
                 chunks.append(' '.join(current_chunk))
                 current_chunk = []
@@ -121,85 +122,26 @@ class SummarizerService:
 
         logger.info(f"Splitting transcript into {len(chunks)} chunks")
 
-        # Summarize each chunk
         chunk_summaries = []
         for i, chunk in enumerate(chunks):
-            try:
-                response = self.client.chat.completions.create(
-                    model=self.model,
-                    messages=[
-                        {"role": "system", "content": "You are a helpful assistant that summarizes video transcript segments."},
-                        {"role": "user", "content": f"Summarize this part of a video transcript:\n\n{chunk}"}
-                    ],
-                    max_tokens=500,
-                    temperature=0.7
-                )
-
-                chunk_summary = response.choices[0].message.content.strip()
-                chunk_summaries.append(chunk_summary)
+            summary = self._make_request(f"Summarize this part of a video transcript:\n\n{chunk}", 500)
+            if summary:
+                chunk_summaries.append(summary)
                 logger.info(f"Summarized chunk {i+1}/{len(chunks)}")
-
-            except Exception as e:
-                logger.error(f"Error summarizing chunk {i+1}: {e}")
-                continue
 
         if not chunk_summaries:
             return None
 
-        # Combine chunk summaries into final summary
         combined_text = '\n\n'.join(chunk_summaries)
+        final_prompt = "Combine the following summaries into a single coherent summary:"
+        if style == 'bullet_points':
+            final_prompt = "Combine the following summaries into a single list of bullet points:"
 
-        try:
-            final_prompt = "Combine the following summaries into a single coherent summary:"
-            if style == 'bullet_points':
-                final_prompt = "Combine the following summaries into a single list of bullet points:"
-
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": "You are a helpful assistant that creates comprehensive summaries."},
-                    {"role": "user", "content": f"{final_prompt}\n\n{combined_text}"}
-                ],
-                max_tokens=settings.OPENAI_MAX_TOKENS,
-                temperature=0.7
-            )
-
-            final_summary = response.choices[0].message.content.strip()
-            return final_summary
-
-        except Exception as e:
-            logger.error(f"Error creating final summary: {e}")
-            # Return combined chunk summaries as fallback
-            return combined_text
+        return self._make_request(f"{final_prompt}\n\n{combined_text}", settings.OPENAI_MAX_TOKENS)
 
     def generate_title_summary(self, title: str, description: str) -> Optional[str]:
-        """
-        Generate a brief summary from video title and description (fallback when no transcript)
-
-        Args:
-            title: Video title
-            description: Video description
-
-        Returns:
-            Summary text or None if failed
-        """
-        if not self.client:
+        if not self.api_key:
             return None
 
-        try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": "You are a helpful assistant that summarizes video content."},
-                    {"role": "user", "content": f"Based on this video title and description, provide a brief summary:\n\nTitle: {title}\n\nDescription: {description}"}
-                ],
-                max_tokens=300,
-                temperature=0.7
-            )
-
-            summary = response.choices[0].message.content.strip()
-            return summary
-
-        except Exception as e:
-            logger.error(f"Error generating title summary: {e}")
-            return None
+        prompt = f"Based on this video title and description, provide a brief summary:\n\nTitle: {title}\n\nDescription: {description or ''}"
+        return self._make_request(prompt, 300)
