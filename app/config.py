@@ -25,6 +25,12 @@ class Settings(BaseSettings):
     DEEPSEEK_MODEL: str = "deepseek-chat"
     USE_DEEPSEEK: bool = False
 
+    # OpenRouter (DeepSeek via OpenRouter - recommended)
+    OPENROUTER_API_KEY: Optional[str] = None
+    OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
+    OPENROUTER_MODEL: str = "deepseek/deepseek-chat-v3-0324:free"
+    USE_OPENROUTER: bool = False
+
     # Crawler Settings
     MAX_CONCURRENT_CRAWLS: int = 3
     MAX_VIDEOS_PER_CHANNEL: int = 50

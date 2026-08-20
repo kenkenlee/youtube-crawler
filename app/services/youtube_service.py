@@ -156,7 +156,7 @@ class YouTubeService:
 
         # Fallback to yt-dlp
         try:
-            url = f'https://www.youtube.com/channel/{channel_id}/videos'
+            url = f'https://www.youtube.com/channel/{channel_id}'
             ydl_opts = {
                 'quiet': True,
                 'no_warnings': True,
