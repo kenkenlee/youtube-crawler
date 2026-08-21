@@ -44,6 +44,10 @@ class Settings(BaseSettings):
     ENABLE_SCHEDULER: bool = True
     DAILY_CRAWL_TIME: str = "02:00"
 
+    # Browser-based transcript fallback (Playwright)
+    USE_BROWSER_TRANSCRIPT: bool = False
+    BROWSER_HEADLESS: bool = True
+
     class Config:
         env_file = ".env"
         case_sensitive = True

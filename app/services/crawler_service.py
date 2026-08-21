@@ -18,12 +18,13 @@ logger = logging.getLogger(__name__)
 
 
 class CrawlerService:
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, cookies_file: str = None):
         self.db = db
         self.youtube_service = YouTubeService()
         self.filter_service = FilterService()
         self.transcript_service = TranscriptService()
         self.summarizer_service = SummarizerService()
+        self.cookies_file = cookies_file  # Path to cookies.txt for bypassing rate limits
 
     async def start_crawl_session(self, session_id: int) -> bool:
         """
@@ -234,7 +235,10 @@ class CrawlerService:
         # Always extract transcript if not already present
         if not video.transcript_text:
             try:
-                transcript = self.transcript_service.get_transcript(video.video_id)
+                transcript = self.transcript_service.get_transcript(
+                    video.video_id,
+                    cookies_file=self.cookies_file
+                )
                 if transcript:
                     video.transcript_text = transcript
                     self.db.commit()
