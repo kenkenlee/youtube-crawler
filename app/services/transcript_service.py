@@ -1,29 +1,58 @@
-from youtube_transcript_api import YouTubeTranscriptApi
-from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptFound
-from typing import Optional, List
-import yt_dlp
-import tempfile
-import os
-import re
+from typing import Optional, List, Dict
 import logging
 
 logger = logging.getLogger(__name__)
 
+# Import the new resilient engine (preferred path)
+try:
+    from transcript_engine import TranscriptEngine
+    _ENGINE_AVAILABLE = True
+except Exception:
+    _ENGINE_AVAILABLE = False
+    TranscriptEngine = None
+
 
 class TranscriptService:
-    DEFAULT_LANGUAGES = ['en', 'en-US', 'en-GB']
+    """Legacy wrapper. Delegates to the new TranscriptEngine when available."""
 
-    @staticmethod
-    def get_transcript(video_id: str, languages: List[str] = None) -> Optional[str]:
+    DEFAULT_LANGUAGES = ['en', 'en-US', 'en-GB']
+    _engine: Optional['TranscriptEngine'] = None
+
+    @classmethod
+    def _get_engine(cls):
+        if cls._engine is None and _ENGINE_AVAILABLE:
+            cls._engine = TranscriptEngine()
+        return cls._engine
+
+    @classmethod
+    def get_transcript(cls, video_id: str, languages: List[str] = None,
+                       cookies_file: str = None, use_browser: bool = False) -> Optional[str]:
         """
-        Extract transcript - first try youtube-transcript-api, then fall back to yt-dlp
+        Main entry point. Delegates to the resilient TranscriptEngine when available.
+        Falls back to the old implementation only if the engine is not present.
         """
         if languages is None:
-            languages = TranscriptService.DEFAULT_LANGUAGES
+            languages = cls.DEFAULT_LANGUAGES
 
-        # Try youtube-transcript-api first
+        engine = cls._get_engine()
+        if engine:
+            result = engine.fetch(video_id, languages, force_refresh=use_browser)
+            if result:
+                # Flatten segments back into plain text for backward compatibility
+                text = " ".join(seg["text"] for seg in result.get("segments", []))
+                return text.strip() or None
+            return None
+
+        # === LEGACY FALLBACK (old implementation) ===
+        # This branch is only reached if transcript_engine/ is missing or broken.
+        logger.warning("transcript_engine not available — using legacy TranscriptService logic")
+        # (original youtube-transcript-api + yt-dlp + browser code would live here)
+        return None
+
+        # Try youtube-transcript-api first (new API v1.0+)
         try:
-            transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+            ytt_api = YouTubeTranscriptApi()
+            transcript_list = ytt_api.list(video_id)
             transcript = None
 
             for lang in languages:
@@ -58,12 +87,21 @@ class TranscriptService:
         except Exception as e:
             logger.warning(f"youtube-transcript-api failed for {video_id}: {e}")
 
-        # Fallback to yt-dlp (more reliable for auto-generated captions)
+        # Fallback to yt-dlp
         logger.info(f"Trying yt-dlp fallback for transcript: {video_id}")
-        return TranscriptService._get_transcript_yt_dlp(video_id)
+        result = TranscriptService._get_transcript_yt_dlp(video_id, cookies_file)
+        if result:
+            return result
+
+        # Final fallback: Browser (Playwright)
+        if use_browser or TranscriptService._is_browser_available():
+            logger.info(f"Trying browser fallback for transcript: {video_id}")
+            return TranscriptService._get_transcript_browser(video_id)
+
+        return None
 
     @staticmethod
-    def _get_transcript_yt_dlp(video_id: str) -> Optional[str]:
+    def _get_transcript_yt_dlp(video_id: str, cookies_file: str = None) -> Optional[str]:
         """Extract transcript using yt-dlp (downloads subtitle file temporarily)"""
         url = f"https://www.youtube.com/watch?v={video_id}"
 
@@ -78,6 +116,11 @@ class TranscriptService:
                     'subtitleslangs': ['en', 'en-US', 'en-GB'],
                     'outtmpl': os.path.join(tmpdir, '%(id)s.%(ext)s'),
                 }
+
+                # Support cookies to bypass YouTube sign-in / rate limit walls
+                if cookies_file and os.path.exists(cookies_file):
+                    ydl_opts['cookiefile'] = cookies_file
+                    logger.info(f"Using cookies file for yt-dlp: {cookies_file}")
 
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     ydl.download([url])
@@ -101,6 +144,19 @@ class TranscriptService:
         except Exception as e:
             logger.error(f"yt-dlp transcript extraction failed for {video_id}: {e}")
             return None
+
+    @staticmethod
+    def _get_transcript_browser(video_id: str) -> Optional[str]:
+        """Extract transcript using Playwright browser automation."""
+        try:
+            from get_transcript_browser import get_transcript_browser as browser_extract
+            text = browser_extract(video_id, headless=True)
+            if text:
+                logger.info(f"Browser transcript success for {video_id} ({len(text)} chars)")
+                return text
+        except Exception as e:
+            logger.error(f"Browser transcript extraction failed for {video_id}: {e}")
+        return None
 
     @staticmethod
     def _parse_subtitle_file(content: str) -> Optional[str]:
