@@ -11,6 +11,7 @@ from transcript_engine.store import TranscriptStore
 from transcript_engine.governor import RateGovernor
 from transcript_engine.tiers.base import TranscriptTier
 from transcript_engine.tiers.tier1_api import Tier1Api
+from transcript_engine.tiers.tier2_ytdlp import Tier2YtDlp
 from transcript_engine.errors import (
     BlockedError, UnavailableError, TransientError, ToolRotError, FatalError
 )
@@ -22,7 +23,8 @@ class TranscriptEngine:
         self.governor = RateGovernor(self.store)
         self.tiers: List[TranscriptTier] = [
             Tier1Api(self.governor),
-            # Tier2YtDlp, Tier3Proxy, Tier4DataApi, Tier5ASR will be added here
+            Tier2YtDlp(self.governor),
+            # Tier3Proxy, Tier4DataApi, Tier5ASR will be added later
         ]
 
     def fetch(self, video_id: str, languages: List[str] = None, force_refresh: bool = False) -> Optional[Dict]:
