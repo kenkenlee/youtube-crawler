@@ -9,6 +9,10 @@ class SessionBase(BaseModel):
     channel_ids: List[int] = Field(..., description="List of channel IDs to crawl")
     filter_keywords: List[str] = Field(default_factory=list, description="Keywords for filtering")
     max_videos: int = Field(default=5, ge=1, le=200, description="Max videos to fetch per channel in this session")
+    recurrence_hours: Optional[int] = Field(
+        default=None, ge=1, le=720,
+        description="Re-run this session every N hours (1-720). Omit or null for a one-off session."
+    )
 
 
 class SessionCreate(SessionBase):
@@ -23,6 +27,9 @@ class SessionResponse(SessionBase):
     id: int
     status: str
     max_videos: int = 5
+    recurrence_hours: Optional[int] = None
+    recurrence_active: bool = True
+    parent_session_id: Optional[int] = None
     total_channels: int = 0
     processed_channels: int = 0
     total_videos_found: int = 0

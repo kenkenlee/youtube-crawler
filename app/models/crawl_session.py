@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Text, JSON, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Text, JSON, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -14,6 +14,11 @@ class CrawlSession(Base):
     channel_ids = Column(JSON, default=list)  # List of channel IDs to crawl
     filter_keywords = Column(JSON, default=list)  # Keywords for filtering
     max_videos = Column(Integer, default=5)  # Max videos to fetch per channel in this session
+    # Recurrence (feature 10): if set, the scheduler re-runs this session every
+    # N hours by spawning child sessions. NULL = one-off session.
+    recurrence_hours = Column(Integer, nullable=True)  # 1-720 hours, NULL = one-off
+    recurrence_active = Column(Boolean, default=True)  # False = recurrence stopped
+    parent_session_id = Column(Integer, ForeignKey("crawl_sessions.id"), nullable=True, index=True)
     total_channels = Column(Integer, default=0)
     processed_channels = Column(Integer, default=0)
     total_videos_found = Column(Integer, default=0)

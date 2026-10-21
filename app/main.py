@@ -35,6 +35,9 @@ def _apply_lightweight_migrations():
         ],
         "crawl_sessions": [
             ("max_videos", "ALTER TABLE crawl_sessions ADD COLUMN max_videos INTEGER DEFAULT 5"),
+            ("recurrence_hours", "ALTER TABLE crawl_sessions ADD COLUMN recurrence_hours INTEGER"),
+            ("recurrence_active", "ALTER TABLE crawl_sessions ADD COLUMN recurrence_active BOOLEAN DEFAULT 1"),
+            ("parent_session_id", "ALTER TABLE crawl_sessions ADD COLUMN parent_session_id INTEGER"),
         ],
     }
 

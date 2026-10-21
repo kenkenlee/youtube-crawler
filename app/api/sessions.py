@@ -27,6 +27,8 @@ def create_session(session: SessionCreate, background_tasks: BackgroundTasks, db
         channel_ids=session.channel_ids,
         filter_keywords=session.filter_keywords,
         max_videos=session.max_videos,
+        recurrence_hours=session.recurrence_hours,
+        recurrence_active=bool(session.recurrence_hours),
         status="pending"
     )
     db.add(db_session)
@@ -37,6 +39,34 @@ def create_session(session: SessionCreate, background_tasks: BackgroundTasks, db
     background_tasks.add_task(run_crawl_session, db_session.id)
 
     return db_session
+
+
+@router.put("/{session_id}/recurrence/pause")
+def pause_recurrence(session_id: int, db: Session = Depends(get_db)):
+    """Stop a session from recurring (future runs cancelled, history kept)"""
+    session = db.query(CrawlSession).filter(CrawlSession.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if not session.recurrence_hours:
+        raise HTTPException(status_code=400, detail="Session is not recurring")
+
+    session.recurrence_active = False
+    db.commit()
+    return {"message": f"Recurrence paused for session {session_id}"}
+
+
+@router.put("/{session_id}/recurrence/resume")
+def resume_recurrence(session_id: int, db: Session = Depends(get_db)):
+    """Resume recurrence for a paused recurring session"""
+    session = db.query(CrawlSession).filter(CrawlSession.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if not session.recurrence_hours:
+        raise HTTPException(status_code=400, detail="Session is not recurring")
+
+    session.recurrence_active = True
+    db.commit()
+    return {"message": f"Recurrence resumed for session {session_id}"}
 
 
 def run_crawl_session(session_id: int):

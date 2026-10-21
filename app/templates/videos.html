@@ -45,7 +45,7 @@
         </select>
     </div>
     <div class="col-md-1">
-        <select class="form-select" id="browseRowSize" title="Videos per row (browse view)" style="display:none;">
+        <select class="form-select" id="browseRowSize" title="Videos per row (browse view)">
             <option value="3">3 / row</option>
             <option value="4">4 / row</option>
             <option value="5" selected>5 / row</option>
@@ -54,10 +54,10 @@
     </div>
     <div class="col-md-2">
         <div class="btn-group w-100" role="group" id="viewToggle">
-            <button type="button" class="btn btn-outline-secondary active" id="viewListBtn" onclick="setViewMode('list')" title="Detailed list view">
+            <button type="button" class="btn btn-outline-secondary" id="viewListBtn" onclick="setViewMode('list')" title="Detailed list view">
                 <i class="bi bi-list-ul"></i> List
             </button>
-            <button type="button" class="btn btn-outline-secondary" id="viewBrowseBtn" onclick="setViewMode('browse')" title="Browse view: thumbnail, title and short info, grouped by channel">
+            <button type="button" class="btn btn-outline-secondary active" id="viewBrowseBtn" onclick="setViewMode('browse')" title="Browse view: thumbnail, title and short info, grouped by channel">
                 <i class="bi bi-grid"></i> Browse
             </button>
         </div>
