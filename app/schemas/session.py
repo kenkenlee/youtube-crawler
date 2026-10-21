@@ -8,6 +8,7 @@ class SessionBase(BaseModel):
     session_type: str = Field(default="manual", description="manual/scheduled/keyword_filter")
     channel_ids: List[int] = Field(..., description="List of channel IDs to crawl")
     filter_keywords: List[str] = Field(default_factory=list, description="Keywords for filtering")
+    max_videos: int = Field(default=5, ge=1, le=200, description="Max videos to fetch per channel in this session")
 
 
 class SessionCreate(SessionBase):
@@ -21,6 +22,7 @@ class SessionUpdate(BaseModel):
 class SessionResponse(SessionBase):
     id: int
     status: str
+    max_videos: int = 5
     total_channels: int = 0
     processed_channels: int = 0
     total_videos_found: int = 0

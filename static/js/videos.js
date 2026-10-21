@@ -2,6 +2,14 @@
 
 let currentPage = 0;
 let currentVideoId = null;
+let currentViewMode = 'list';  // 'list' (detailed) or 'browse' (thumbnail + short info)
+
+function setViewMode(mode) {
+    currentViewMode = mode;
+    $('#viewListBtn').toggleClass('active', mode === 'list');
+    $('#viewBrowseBtn').toggleClass('active', mode === 'browse');
+    loadVideos();
+}
 
 $(document).ready(function() {
     // Get URL parameters FIRST
@@ -45,6 +53,11 @@ $(document).ready(function() {
         }
         loadVideos();
     });
+
+    // When sort option changes, reload videos
+    $('#sortFilter').change(function() {
+        loadVideos();
+    });
 });
 
 function loadVideos(page = 0) {
@@ -53,8 +66,9 @@ function loadVideos(page = 0) {
     // Use the stored channel filter or get from dropdown
     const channelId = window.currentChannelFilter || $('#channelFilter').val();
     const hasSummary = $('#summaryFilter').val();
+    const sortBy = $('#sortFilter').val() || 'fetched';
 
-    let url = `/api/videos?skip=${skip}&limit=${limit}`;
+    let url = `/api/videos?skip=${skip}&limit=${limit}&sort_by=${sortBy}`;
     if (channelId) url += `&channel_id=${channelId}`;
     if (hasSummary) url += `&has_summary=${hasSummary}`;
 
@@ -113,7 +127,7 @@ function searchVideos() {
         return;
     }
 
-    // Include channel filter in search if present
+    // Include channel filter in search if present; keep the chosen sort order
     const channelId = window.currentChannelFilter || $('#channelFilter').val();
     let url = `/api/videos/search?q=${encodeURIComponent(query)}`;
     if (channelId) {
@@ -136,10 +150,96 @@ function displayVideos(videos) {
         return;
     }
 
+    if (currentViewMode === 'browse') {
+        displayBrowseView(videos);
+        return;
+    }
+
     videos.forEach(function(video) {
         const videoCard = createVideoCard(video);
         container.append(videoCard);
     });
+}
+
+// Browse view: videos grouped row-by-row per channel, each video showing
+// only thumbnail, title and short info
+function displayBrowseView(videos) {
+    const container = $('#videosList');
+
+    // Group videos by channel preserving the current sort order
+    const byChannel = new Map();
+    videos.forEach(function(video) {
+        const key = video.channel_name || 'Unknown Channel';
+        if (!byChannel.has(key)) {
+            byChannel.set(key, { channel: video, videos: [] });
+        }
+        byChannel.get(key).videos.push(video);
+    });
+
+    byChannel.forEach(function(group, channelName) {
+        const channelVideo = group.channel;
+        const logoUrl = channelVideo.channel_thumbnail_url;
+        const logoImg = logoUrl
+            ? `<img src="${logoUrl}" class="rounded-circle me-2" width="32" height="32"
+                     alt="${channelName}"
+                     onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(channelName.charAt(0))}&background=ff0000&color=fff';">`
+            : `<img src="https://ui-avatars.com/api/?name=${encodeURIComponent(channelName.charAt(0))}&background=ff0000&color=fff"
+                     class="rounded-circle me-2" width="32" height="32"
+                     alt="${channelName}"
+                     onerror="this.style.display='none'">`;
+        const channelSection = `
+        <div class="card mb-4">
+            <div class="card-header bg-light d-flex align-items-center">
+                ${logoImg}
+                <h5 class="mb-0 me-2">${channelName}</h5>
+                <span class="badge bg-secondary">${group.videos.length} video${group.videos.length !== 1 ? 's' : ''}</span>
+            </div>
+            <div class="card-body">
+                <div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-3">
+                    ${group.videos.map(video => createBrowseCard(video)).join('')}
+                </div>
+            </div>
+        </div>`;
+        container.append(channelSection);
+    });
+}
+
+function createBrowseCard(video) {
+    const publishedDate = video.published_at
+        ? new Date(video.published_at).toLocaleDateString()
+        : 'Unknown';
+    const fetchedDate = video.created_at
+        ? new Date(video.created_at).toLocaleDateString()
+        : 'Unknown';
+    const duration = formatDuration(video.duration);
+    const views = formatNumber(video.view_count);
+    const summaryBadge = video.summary_text
+        ? '<span class="badge bg-success"><i class="bi bi-check-circle"></i> Summary</span>'
+        : '';
+    const videoUrl = `https://www.youtube.com/watch?v=${video.video_id}`;
+
+    return `
+        <div class="col">
+            <div class="card h-100 browse-card" onclick="viewVideoDetails(${video.id})" style="cursor:pointer">
+                <img src="https://img.youtube.com/vi/${video.video_id}/mqdefault.jpg"
+                     alt="${video.title}"
+                     class="card-img-top browse-thumbnail"
+                     onerror="this.src='https://via.placeholder.com/320x180?text=No+Image'">
+                <div class="card-body p-2">
+                    <h6 class="card-title mb-1 browse-title" title="${video.title}">${video.title}</h6>
+                    <small class="text-muted d-block mb-1">
+                        <i class="bi bi-calendar"></i> ${publishedDate} &middot;
+                        <i class="bi bi-clock"></i> ${duration}
+                    </small>
+                    <small class="text-muted d-block">
+                        <i class="bi bi-eye"></i> ${views} views
+                        &middot; <i class="bi bi-cloud-download"></i> Fetched ${fetchedDate}
+                    </small>
+                    <div class="mt-1">${summaryBadge}</div>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 function createVideoCard(video) {

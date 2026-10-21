@@ -16,10 +16,10 @@
 
 <!-- Search and Filters -->
 <div class="row mb-4">
-    <div class="col-md-4">
+    <div class="col-md-3">
         <input type="text" class="form-control" id="searchQuery" placeholder="Search videos...">
     </div>
-    <div class="col-md-3">
+    <div class="col-md-2">
         <select class="form-select" id="channelFilter">
             <option value="">All Channels</option>
             <!-- Populated dynamically -->
@@ -32,9 +32,25 @@
             <option value="false">Without Summary</option>
         </select>
     </div>
-    <div class="col-md-3">
-        <button class="btn btn-primary w-100" onclick="searchVideos()">
-            <i class="bi bi-search"></i> Search
+    <div class="col-md-2">
+        <select class="form-select" id="sortFilter" title="Sort videos">
+            <option value="fetched" selected>Sort: Fetch time</option>
+            <option value="published">Sort: Upload time</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <div class="btn-group w-100" role="group" id="viewToggle">
+            <button type="button" class="btn btn-outline-secondary active" id="viewListBtn" onclick="setViewMode('list')" title="Detailed list view">
+                <i class="bi bi-list-ul"></i> List
+            </button>
+            <button type="button" class="btn btn-outline-secondary" id="viewBrowseBtn" onclick="setViewMode('browse')" title="Browse view: thumbnail, title and short info, grouped by channel">
+                <i class="bi bi-grid"></i> Browse
+            </button>
+        </div>
+    </div>
+    <div class="col-md-1">
+        <button class="btn btn-primary w-100" onclick="searchVideos()" title="Search / Refresh">
+            <i class="bi bi-search"></i>
         </button>
     </div>
 </div>
@@ -85,5 +101,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="/static/js/videos.js?v=5"></script>
+<script src="/static/js/videos.js?v=6"></script>
 {% endblock %}
