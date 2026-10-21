@@ -353,8 +353,19 @@ function loadChannelsFilter() {
     });
 }
 
-function viewVideoDetails(videoId) {
+// Escape a string for safe use inside an HTML attribute (single/double quotes).
+function escAttr(s) {
+    return String(s || '')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+function viewVideoDetails(videoId, afterRender) {
     currentVideoId = videoId;
+
 
     $.get(`/api/videos/${videoId}`, function(video) {
         $('#videoDetailsTitle').text(video.title);
@@ -387,7 +398,7 @@ function viewVideoDetails(videoId) {
                    <i class="bi bi-file-earmark-text"></i> Generate Detail Summary
                </button>`;
         const mindMapBtn = hasDetailSummary
-            ? `<button class="btn btn-sm btn-purple" onclick="viewMindMap(${video.id})">
+            ? `<button id="mindMapBtn" class="btn btn-sm btn-purple" onclick="viewMindMap(${video.id})">
                    <i class="bi bi-diagram-3"></i> View Mind Map
                </button>`
             : '';
@@ -423,15 +434,39 @@ function viewVideoDetails(videoId) {
             </div>
             <div class="row mt-3">
                 <div class="col-12">
-                    <h6>Description</h6>
-                    <p>${video.description || 'No description available'}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-1">Description</h6>
+                        <div class="d-flex gap-1 content-actions">
+                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                    onclick="copyContent('videoDescriptionBlock', 'text')" title="Copy description">
+                                <i class="bi bi-clipboard"></i> Copy
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                    onclick="shareContent('Description — ${escAttr(video.title)}', 'videoDescriptionBlock', 'text')" title="Share description">
+                                <i class="bi bi-share"></i> Share
+                            </button>
+                        </div>
+                    </div>
+                    <p id="videoDescriptionBlock">${video.description || 'No description available'}</p>
                 </div>
             </div>
             ${video.summary_text ? `
             <div class="row mt-3">
                 <div class="col-12">
-                    <h6>AI Summary</h6>
-                    <div class="alert alert-info">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-1">AI Summary</h6>
+                        <div class="d-flex gap-1 content-actions">
+                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                    onclick="copyContent('aiSummaryBlock', 'text')" title="Copy summary">
+                                <i class="bi bi-clipboard"></i> Copy
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                    onclick="shareContent('AI summary — ${escAttr(video.title)}', 'aiSummaryBlock', 'text')" title="Share summary">
+                                <i class="bi bi-share"></i> Share
+                            </button>
+                        </div>
+                    </div>
+                    <div class="alert alert-info" id="aiSummaryBlock">
                         ${video.summary_text}
                     </div>
                     <small class="text-muted">
@@ -452,13 +487,27 @@ function viewVideoDetails(videoId) {
             ${video.detail_summary ? `
             <div class="row mt-3">
                 <div class="col-12">
-                    <h6>Detail Summary</h6>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-1">Detail Summary</h6>
+                        <div class="d-flex gap-1 content-actions">
+                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                    onclick="copyContent('detailSummaryBlock', 'text')" title="Copy summary">
+                                <i class="bi bi-clipboard"></i> Copy
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                    onclick="shareContent('Detail summary — ${escAttr(video.title)}', 'detailSummaryBlock', 'text')" title="Share summary">
+                                <i class="bi bi-share"></i> Share
+                            </button>
+                        </div>
+                    </div>
                     <div class="alert alert-success detail-summary-block" id="detailSummaryBlock">
                         ${renderMarkdown(video.detail_summary)}
                     </div>
                     <small class="text-muted">
                         Generated: ${video.detail_summary_generated_at ? new Date(video.detail_summary_generated_at).toLocaleString() : 'Unknown'}
                     </small>
+                    <!-- Feature 6: mind map rendered inline right below the detail summary -->
+                    <div id="mindMapContainer" class="mt-3"></div>
                 </div>
             </div>
             ` : ''}
@@ -478,9 +527,21 @@ function viewVideoDetails(videoId) {
             ${video.transcript_text ? `
             <div class="row mt-3">
                 <div class="col-12">
-                    <h6>Transcript</h6>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-1">Transcript</h6>
+                        <div class="d-flex gap-1 content-actions">
+                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                    onclick="copyContent('transcriptBlock', 'text')" title="Copy transcript">
+                                <i class="bi bi-clipboard"></i> Copy
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                    onclick="shareContent('Transcript — ${escAttr(video.title)}', 'transcriptBlock', 'text')" title="Share transcript">
+                                <i class="bi bi-share"></i> Share
+                            </button>
+                        </div>
+                    </div>
                     <div class="bg-light p-3 rounded" style="max-height: 300px; overflow-y: auto;">
-                        <pre style="white-space: pre-wrap;">${video.transcript_text}</pre>
+                        <pre id="transcriptBlock" style="white-space: pre-wrap;">${video.transcript_text}</pre>
                     </div>
                 </div>
             </div>
@@ -489,6 +550,7 @@ function viewVideoDetails(videoId) {
 
         $('#videoDetailsContent').html(content);
         $('#videoDetailsModal').modal('show');
+        if (afterRender) afterRender();
     }).fail(function() {
         alert('Failed to load video details');
     });
@@ -557,45 +619,65 @@ function generateDetailSummary(videoId, hasExisting) {
     });
 }
 
-// Feature 6: show the mind map generated from the detail summary.
+// Feature 6: generate the mind map and render it as an inline SVG vector
+// diagram directly below the Detail Summary section (no popup).
 function viewMindMap(videoId) {
+    const $btn = $('#mindMapBtn');
+    const original = $btn.html();
+    $btn.prop('disabled', true).html(
+        '<span class="spinner-border spinner-border-sm"></span> Generating...'
+    );
+
     $.ajax({
         url: `/api/videos/${videoId}/mindmap`,
         method: 'POST',
         success: function(response) {
-            showMindMapModal(videoId, response.mind_map);
+            $btn.prop('disabled', false).html(original);
+            const container = $('#mindMapContainer');
+            if (container.length === 0) {
+                // Detail summary section not rendered yet — reopen details.
+                viewVideoDetails(videoId, function() {
+                    renderMindMapSvg($('#mindMapContainer'), response.mind_map);
+                });
+            } else {
+                renderMindMapSvg(container, response.mind_map);
+            }
         },
         error: function(xhr) {
+            $btn.prop('disabled', false).html(original);
             alert('Failed to generate mind map: ' + (xhr.responseJSON?.detail || 'Unknown error'));
         }
     });
 }
 
-function showMindMapModal(videoId, mindMapMarkdown) {
-    // Remove any previous instance
-    $('#mindMapModal').remove();
-
-    const modal = `
-    <div class="modal fade" id="mindMapModal" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-diagram-3"></i> Mind Map</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div id="mindMapTree" class="mindmap-container">
-                        ${renderMarkdownTree(mindMapMarkdown)}
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>`;
-    $('body').append(modal);
-    $('#mindMapModal').modal('show');
+// Parse mind-map markdown into a {content, children} tree.
+function parseMindMapTree(text) {
+    if (!text) return null;
+    const lines = text.split('\n').filter(l => l.trim() !== '');
+    let root = null;
+    const stack = [];  // stack of {level, node}
+    lines.forEach(function(line) {
+        const indent = line.match(/^\s*/)[0].length;
+        const content = line.trim().replace(/^[-*#]+\s*/, '').replace(/^#+\s*/, '');
+        if (!content) return;
+        const level = line.startsWith('#') ? 0 : Math.floor(indent / 2);
+        const node = { content: content, children: [] };
+        if (root === null) {
+            root = node;
+            stack.push({ level: level, node: node });
+        } else {
+            while (stack.length > 0 && stack[stack.length - 1].level >= level) {
+                stack.pop();
+            }
+            if (stack.length === 0) {
+                root.children.push(node);  // extra top-level branch
+            } else {
+                stack[stack.length - 1].node.children.push(node);
+            }
+            stack.push({ level: level, node: node });
+        }
+    });
+    return root;
 }
 
 // Minimal markdown renderer for summary blocks (headings, bullets, bold, paragraphs).
@@ -638,59 +720,208 @@ function inlineFormat(text) {
         .replace(/\*([^*]+)\*/g, '<em>$1</em>');
 }
 
-// Render mind-map markdown as an indented tree view.
-function renderMarkdownTree(text) {
-    if (!text) return '';
-    let html = '<div class="mindmap-tree">';
-    const lines = text.split('\n').filter(l => l.trim() !== '');
-    let root = null;
-    const stack = [];  // stack of {level, node}
-    lines.forEach(function(line) {
-        const indent = line.match(/^\s*/)[0].length;
-        const content = line.trim().replace(/^[-*#]+\s*/, '').replace(/^#+\s*/, '');
-        if (!content) return;
-        const level = line.startsWith('#') ? 0 : Math.floor(indent / 2);
-        const node = { content: content, children: [] };
-        if (root === null) {
-            root = node;
+// Render the mind map as a true vector (SVG) diagram: rounded node boxes
+// connected by curved bezier links, laid out left→right in a horizontal tree.
+function renderMindMapSvg(container, text) {
+    const root = parseMindMapTree(text);
+    if (!root) {
+        container.html('<div class="text-muted">No mind map data.</div>');
+        return;
+    }
+
+    // Escape helper for SVG text content.
+    const esc = function(s) {
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    };
+
+    const NODE_H = 34;         // node height
+    const V_GAP = 12;          // vertical gap between sibling subtrees
+    const H_GAP = 48;          // horizontal gap between depth levels
+    const CHAR_W = 7.2;        // approx px per character at 13px font
+    const COLORS = [          // level accent colors (fill, border)
+        { fill: '#6f42c1', text: '#fff' },
+        { fill: '#0d6efd', text: '#fff' },
+        { fill: '#198754', text: '#fff' },
+        { fill: '#fd7e14', text: '#000' },
+        { fill: '#20c997', text: '#000' },
+        { fill: '#6c757d', text: '#fff' }
+    ];
+
+    // Measure each node and compute subtree heights bottom-up.
+    function measure(node, depth) {
+        const isLeaf = !node.children || node.children.length === 0;
+        const color = COLORS[Math.min(depth, COLORS.length - 1)];
+        node._w = Math.max(90, Math.min(260, node.content.length * CHAR_W + 24));
+        node._lines = isLeaf && node.content.length > 34
+            ? Math.ceil(node.content.length / 34) : 1;
+        if (node._lines > 1) node._h = NODE_H + (node._lines - 1) * 16;
+        else node._h = NODE_H;
+        node._color = color;
+
+        if (isLeaf) {
+            node._subH = node._h;
         } else {
-            while (stack.length > 0 && stack[stack.length - 1].level >= level) {
-                stack.pop();
-            }
-            if (stack.length === 0) {
-                if (root.children) {
-                    // Treat as additional top-level branch — attach to root
-                    root.children.push(node);
-                    stack.push({ level: level, node: node });
-                    return;
-                }
-            }
-            if (stack.length > 0) {
-                stack[stack.length - 1].node.children.push(node);
-            }
-            stack.push({ level: level, node: node });
+            let sum = 0;
+            node.children.forEach(function(c, i) {
+                measure(c, depth + 1);
+                sum += c._subH;
+                if (i < node.children.length - 1) sum += V_GAP;
+            });
+            node._subH = Math.max(node._h, sum);
         }
-        if (root !== node) {
-            stack.push({ level: level, node: node });
+    }
+    measure(root, 0);
+
+    const totalH = root._subH + 40;
+    // Total width: root + deepest chain of levels.
+    let maxDepth = 0;
+    (function walk(n, d) { maxDepth = Math.max(maxDepth, d); (n.children || []).forEach(c => walk(c, d + 1)); })(root, 0);
+    const totalW = 40 + (maxDepth + 1) * 130 + maxDepth * H_GAP + 40;
+
+    const parts = [];
+    const svgW = Math.max(container.width() || 800, totalW);
+    const startY = (totalH - root._subH) / 2 + 20;
+    const startX = 20;
+
+    // Recursive layout + draw.
+    function draw(node, x, yTop, ySubCenter, depth) {
+        const color = node._color;
+        const y = ySubCenter - node._h / 2;
+        const isRoot = depth === 0;
+
+        // Curved bezier connector from parent right edge to this node's left edge.
+        if (depth > 0) {
+            const px = node._px, py = node._py;
+            const mx = (px + x) / 2;
+            parts.push(`<path d="M ${px} ${py} C ${mx} ${py}, ${mx} ${y + node._h / 2}, ${x} ${y + node._h / 2}"
+                fill="none" stroke="${color.fill}" stroke-opacity="0.55" stroke-width="2"/>`);
         }
-    });
-    html += renderMindMapNode(root);
-    html += '</div>';
-    return html;
+
+        // Node box.
+        const rx = isRoot ? 18 : 10;
+        parts.push(`<rect x="${x}" y="${y}" width="${node._w}" height="${node._h}" rx="${rx}"
+            fill="${color.fill}" stroke="${color.fill}" stroke-opacity="0.9"/>`);
+        // Text (wrap leaf content if long).
+        const lines = [];
+        if (node._lines > 1) {
+            let remaining = node.content;
+            while (remaining.length > 34) {
+                let cut = remaining.lastIndexOf(' ', 34);
+                if (cut <= 0) cut = 34;
+                lines.push(remaining.slice(0, cut));
+                remaining = remaining.slice(cut).trim();
+            }
+            lines.push(remaining);
+        } else {
+            lines.push(node.content);
+        }
+        const textX = x + node._w / 2;
+        const baseY = y + node._h / 2 - (lines.length - 1) * 8 + 4.5;
+        lines.forEach(function(ln, i) {
+            parts.push(`<text x="${textX}" y="${baseY + i * 16}" text-anchor="middle"
+                fill="${color.text}" font-size="13">${esc(ln)}</text>`);
+        });
+
+        // Children.
+        if (node.children && node.children.length > 0) {
+            const childX = x + node._w + H_GAP;
+            // Parent anchor: right edge, vertically centered.
+            const anchorY = y + node._h / 2;
+            let cy = yTop;
+            node.children.forEach(function(c) {
+                c._px = x + node._w;
+                c._py = anchorY;
+                draw(c, childX, cy, cy + c._subH / 2, depth + 1);
+                cy += c._subH + V_GAP;
+            });
+        }
+    }
+    draw(root, startX, startY, startY + root._subH / 2, 0);
+
+    container.html(`
+        <div class="mindmap-svg-wrap">
+            <div class="mindmap-svg-toolbar d-flex gap-2 mb-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary"
+                        onclick="copyContent('mindmap-svg', 'svg')">Copy</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary"
+                        onclick="shareContent('Mind map', 'mindmap-svg', 'svg')">Share</button>
+            </div>
+            <div class="mindmap-svg-scroll">
+                <svg id="mindmap-svg" xmlns="http://www.w3.org/2000/svg"
+                     width="${svgW}" height="${totalH}" viewBox="0 0 ${svgW} ${totalH}"
+                     class="mindmap-svg" role="img" aria-label="Mind map">
+                    <rect width="100%" height="100%" fill="#ffffff"/>
+                    ${parts.join('\n')}
+                </svg>
+            </div>
+        </div>`);
 }
 
-function renderMindMapNode(node) {
-    if (!node) return '';
-    if (!node.children || node.children.length === 0) {
-        return `<div class="mindmap-leaf">${node.content}</div>`;
+// Generic copy / share helpers for text and rendered content blocks.
+function copyContent(sourceId, mode) {
+    let text = '';
+    if (mode === 'svg') {
+        const el = document.getElementById(sourceId);
+        if (!el) return;
+        text = new XMLSerializer().serializeToString(el);
+    } else {
+        text = $('#' + sourceId).text();
     }
-    return `
-    <div class="mindmap-node">
-        <div class="mindmap-label">${node.content}</div>
-        <div class="mindmap-children">
-            ${node.children.map(renderMindMapNode).join('')}
-        </div>
-    </div>`;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function() {
+            toastMessage('Copied to clipboard');
+        }, function() {
+            fallbackCopy(text);
+        });
+    } else {
+        fallbackCopy(text);
+    }
+}
+
+function shareContent(title, sourceId, mode) {
+    let text = '';
+    if (mode === 'svg') {
+        const el = document.getElementById(sourceId);
+        if (!el) return;
+        text = new XMLSerializer().serializeToString(el);
+    } else {
+        text = $('#' + sourceId).text();
+    }
+    if (navigator.share) {
+        navigator.share({ title: title, text: text }).catch(function() {});
+    } else {
+        copyContent(sourceId, mode);
+        toastMessage('Sharing not supported here — content copied instead');
+    }
+}
+
+function fallbackCopy(text) {
+    const ta = $('<textarea>').val(text).css({ position: 'fixed', opacity: 0 }).appendTo('body');
+    ta[0].select();
+    try { document.execCommand('copy'); toastMessage('Copied to clipboard'); }
+    catch (e) { alert('Copy failed'); }
+    ta.remove();
+}
+
+function toastMessage(msg) {
+    // Reuse a single toast element.
+    if ($('#copyToast').length === 0) {
+        $('body').append(`
+        <div class="toast align-items-center text-white bg-secondary border-0" id="copyToast"
+             role="alert" aria-live="assertive" aria-atomic="true"
+             style="position: fixed; bottom: 20px; right: 20px; z-index: 20000;">
+            <div class="d-flex">
+                <div class="toast-body" id="copyToastBody"></div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto"
+                        data-bs-dismiss="toast"></button>
+            </div>
+        </div>`);
+    }
+    $('#copyToastBody').text(msg);
+    const toastEl = document.getElementById('copyToast');
+    if (window.bootstrap && bootstrap.Toast) {
+        bootstrap.Toast.getOrCreateInstance(toastEl, { delay: 1800 }).show();
+    }
 }
 
 function deleteVideo(videoId) {
