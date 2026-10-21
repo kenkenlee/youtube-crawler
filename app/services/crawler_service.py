@@ -111,10 +111,11 @@ class CrawlerService:
             logger.error(f"Could not determine YouTube channel ID for {channel.channel_name}")
             return 0
 
-        # Get videos from channel
+        # Get videos from channel — per-session limit (default 5), falls back to config
+        per_session_limit = session.max_videos if session.max_videos else settings.MAX_VIDEOS_PER_CHANNEL
         videos = self.youtube_service.list_channel_videos(
             youtube_id,
-            max_results=settings.MAX_VIDEOS_PER_CHANNEL
+            max_results=per_session_limit
         )
 
         if not videos:

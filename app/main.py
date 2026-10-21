@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 import os
 
 from app.config import settings
-from app.database import engine, Base
+from app.database import engine, Base, SessionLocal
 from app.models import Channel, Video, CrawlSession, SessionVideo
 
 
@@ -33,6 +33,9 @@ def _apply_lightweight_migrations():
         "channels": [
             ("thumbnail_url", "ALTER TABLE channels ADD COLUMN thumbnail_url VARCHAR(500)"),
         ],
+        "crawl_sessions": [
+            ("max_videos", "ALTER TABLE crawl_sessions ADD COLUMN max_videos INTEGER DEFAULT 5"),
+        ],
     }
 
     with engine.connect() as conn:
@@ -52,6 +55,31 @@ def _apply_lightweight_migrations():
             "WHERE video_url IS NULL AND video_id IS NOT NULL"
         ))
         conn.commit()
+
+    # Backfill real channel logos: channels created before logo storage have a
+    # NULL thumbnail_url, which made every logo render as the same placeholder.
+    # Fetch each missing avatar once from the YouTube Data API (channels.list).
+    try:
+        with SessionLocal() as db:
+            from app.services.youtube_service import YouTubeService
+            from app.models.channel import Channel as ChannelModel
+            svc = YouTubeService()
+            missing = db.query(ChannelModel).filter(
+                (ChannelModel.thumbnail_url.is_(None)) | (ChannelModel.thumbnail_url == '')
+            ).all()
+            for ch in missing:
+                yt_id = ch.youtube_channel_id
+                if not yt_id and ch.channel_url:
+                    yt_id = svc.extract_channel_id(ch.channel_url)
+                if not yt_id:
+                    continue
+                info = svc.get_channel_info(yt_id)
+                if info and info.get('thumbnail'):
+                    ch.thumbnail_url = info['thumbnail']
+                    db.commit()
+                    print(f"Backfilled logo for channel '{ch.channel_name}'")
+    except Exception as e:
+        print(f"Channel logo backfill skipped: {e}")
 
 
 @asynccontextmanager

@@ -26,6 +26,7 @@ def create_session(session: SessionCreate, background_tasks: BackgroundTasks, db
         session_type=session.session_type,
         channel_ids=session.channel_ids,
         filter_keywords=session.filter_keywords,
+        max_videos=session.max_videos,
         status="pending"
     )
     db.add(db_session)

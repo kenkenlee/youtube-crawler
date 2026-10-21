@@ -36,10 +36,12 @@ class ChannelResponse(BaseModel):
     youtube_channel_id: Optional[str] = None
     channel_name: str
     channel_url: str
+    thumbnail_url: Optional[str] = Field(None, description="Channel logo/avatar URL")
     description: Optional[str] = None
     keywords: List[str] = Field(default_factory=list)
     crawl_enabled: bool = True
     crawl_frequency: str = "manual"
+    thumbnail_url: Optional[str] = None
     id: int
     last_crawled_at: Optional[datetime] = None
     created_at: datetime

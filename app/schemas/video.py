@@ -44,6 +44,7 @@ class VideoResponse(VideoBase):
 class VideoWithChannel(VideoResponse):
     channel_name: str
     channel_url: str
+    channel_thumbnail_url: Optional[str] = None
 
 
 class VideoSummaryRequest(BaseModel):

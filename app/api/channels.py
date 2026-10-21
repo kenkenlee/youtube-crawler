@@ -236,6 +236,7 @@ def create_channel_from_url(data: ChannelCreateFromUrl, db: Session = Depends(ge
         channel_url=channel_info['channel_url'],
         description=data.description,
         keywords=data.keywords,
+        thumbnail_url=channel_info.get('thumbnail', ''),
         crawl_enabled=data.crawl_enabled,
         crawl_frequency=data.crawl_frequency
     )

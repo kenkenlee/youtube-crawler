@@ -13,6 +13,7 @@ class CrawlSession(Base):
     status = Column(String(50), default="pending", index=True)  # pending/running/completed/failed/cancelled
     channel_ids = Column(JSON, default=list)  # List of channel IDs to crawl
     filter_keywords = Column(JSON, default=list)  # Keywords for filtering
+    max_videos = Column(Integer, default=5)  # Max videos to fetch per channel in this session
     total_channels = Column(Integer, default=0)
     processed_channels = Column(Integer, default=0)
     total_videos_found = Column(Integer, default=0)

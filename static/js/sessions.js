@@ -97,6 +97,10 @@ function createSessionCard(session) {
                     </div>
                 </div>
 
+                <div class="mb-2">
+                    <small class="text-muted"><i class="bi bi-collection-play"></i> Videos per channel: ${session.max_videos ?? 5}</small>
+                </div>
+
                 ${session.status === 'running' || session.status === 'completed' ? `
                 <div class="mb-3">
                     <div class="d-flex justify-content-between mb-1">
@@ -166,9 +170,15 @@ function createSession() {
     const sessionType = $('#sessionType').val();
     const selectedChannels = $('#sessionChannels').val();
     const keywords = $('#sessionKeywords').val();
+    const maxVideos = parseInt($('#maxVideos').val()) || 5;
 
     if (!sessionName || !selectedChannels || selectedChannels.length === 0) {
         alert('Please fill in all required fields');
+        return;
+    }
+
+    if (maxVideos < 1 || maxVideos > 200) {
+        alert('Number of videos per channel must be between 1 and 200');
         return;
     }
 
@@ -178,7 +188,8 @@ function createSession() {
         session_name: sessionName,
         session_type: sessionType,
         channel_ids: selectedChannels.map(id => parseInt(id)),
-        filter_keywords: keywordsList
+        filter_keywords: keywordsList,
+        max_videos: maxVideos
     };
 
     $.ajax({

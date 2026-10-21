@@ -86,6 +86,7 @@ async def add_single_video(
                 channel_url=channel_info['channel_url'],
                 description=channel_info.get('description', ''),
                 keywords=[],
+                thumbnail_url=channel_info.get('thumbnail', ''),
                 crawl_enabled=True,
                 crawl_frequency='manual'
             )
@@ -153,6 +154,7 @@ def list_videos(
     channel_id: Optional[int] = None,
     has_summary: Optional[bool] = None,
     keyword: Optional[str] = None,
+    sort_by: str = Query("fetched", pattern="^(fetched|published)$", description="fetched = session fetch time (default), published = video upload time"),
     db: Session = Depends(get_db)
 ):
     """List videos with filters"""
@@ -174,7 +176,14 @@ def list_videos(
             (Video.description.ilike(f'%{keyword_lower}%'))
         )
 
-    videos = query.order_by(Video.published_at.desc()).offset(skip).limit(limit).all()
+    # Sort: "fetched" = when the video was pulled into the DB by a session
+    # (Video.created_at); "published" = when the video was uploaded to YouTube.
+    if sort_by == "published":
+        query = query.order_by(Video.published_at.desc().nullslast())
+    else:
+        query = query.order_by(Video.created_at.desc().nullslast())
+
+    videos = query.offset(skip).limit(limit).all()
 
     # Include channel info so the frontend can display the channel name
     result = []
@@ -182,7 +191,8 @@ def list_videos(
         video_dict = {
             **video.__dict__,
             'channel_name': video.channel.channel_name if video.channel else 'Unknown Channel',
-            'channel_url': video.channel.channel_url if video.channel else ''
+            'channel_url': video.channel.channel_url if video.channel else '',
+            'channel_thumbnail_url': video.channel.thumbnail_url if video.channel else None
         }
         result.append(VideoWithChannel(**video_dict))
 
@@ -211,7 +221,7 @@ def search_videos(
         (Video.summary_text.ilike(search_term))
     )
 
-    videos = query.order_by(Video.published_at.desc()).offset(skip).limit(limit).all()
+    videos = query.order_by(Video.created_at.desc().nullslast()).offset(skip).limit(limit).all()
 
     # Add channel info
     result = []
@@ -219,7 +229,8 @@ def search_videos(
         video_dict = {
             **video.__dict__,
             'channel_name': video.channel.channel_name if video.channel else 'Unknown Channel',
-            'channel_url': video.channel.channel_url if video.channel else ''
+            'channel_url': video.channel.channel_url if video.channel else '',
+            'channel_thumbnail_url': video.channel.thumbnail_url if video.channel else None
         }
         result.append(VideoWithChannel(**video_dict))
 
@@ -236,7 +247,8 @@ def get_video(video_id: int, db: Session = Depends(get_db)):
     video_dict = {
         **video.__dict__,
         'channel_name': video.channel.channel_name if video.channel else 'Unknown Channel',
-        'channel_url': video.channel.channel_url if video.channel else ''
+        'channel_url': video.channel.channel_url if video.channel else '',
+        'channel_thumbnail_url': video.channel.thumbnail_url if video.channel else None
     }
 
     return VideoWithChannel(**video_dict)
