@@ -2,7 +2,7 @@
 
 let currentPage = 0;
 let currentVideoId = null;
-let currentViewMode = 'list';  // 'list' (detailed) or 'browse' (thumbnail + short info)
+let currentViewMode = 'browse';  // 'browse' (thumbnail + short info) or 'list' (detailed)
 let currentVideos = [];        // last loaded videos (for re-render on row-size change)
 
 function setViewMode(mode) {

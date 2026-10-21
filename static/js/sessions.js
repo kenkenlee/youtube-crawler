@@ -6,6 +6,7 @@ let sessionChannelsData = [];  // cached channel list for sorting / auto-naming
 $(document).ready(function() {
     loadSessions();
     loadChannelsForSession();
+    loadRecurringSessions();
 
     // Filter change
     $('#statusFilter').change(function() {
@@ -17,9 +18,100 @@ $(document).ready(function() {
         renderChannelOptions();
     });
 
+    // Recurrence toggle (feature 10)
+    $('#recurringToggle').change(function() {
+        $('#recurrenceOptions').toggle(this.checked);
+    });
     // Auto-refresh every 10 seconds
     setInterval(loadSessions, 10000);
+    setInterval(loadRecurringSessions, 10000);
 });
+
+// Active recurring sessions panel (feature 11)
+function loadRecurringSessions() {
+    $.get('/api/sessions', function(data) {
+        // Recurring templates: sessions with an interval set that aren't child runs
+        const recurring = data.filter(s => s.recurrence_hours && !s.parent_session_id);
+        const container = $('#recurringSessionsList');
+        if (!container.length) return;
+        container.empty();
+
+        if (recurring.length === 0) {
+            container.html('<p class="text-muted">No recurring sessions configured</p>');
+            return;
+        }
+
+        recurring.forEach(function(session) {
+            container.append(createRecurringCard(session));
+        });
+    }).fail(function() {
+        const container = $('#recurringSessionsList');
+        if (container.length) container.html('<p class="text-danger">Failed to load recurring sessions</p>');
+    });
+}
+
+function createRecurringCard(session) {
+    const activeBadge = session.recurrence_active
+        ? '<span class="badge bg-success"><i class="bi bi-check-circle"></i> Active</span>'
+        : '<span class="badge bg-secondary"><i class="bi bi-pause-circle"></i> Paused</span>';
+
+    const lastRun = session.completed_at || session.started_at
+        ? new Date(session.completed_at || session.started_at).toLocaleString()
+        : 'Never';
+
+    // Next run = last run + interval (only meaningful while active)
+    let nextRun = '-';
+    if (session.recurrence_active) {
+        const base = session.completed_at || session.started_at || session.created_at;
+        if (base) {
+            nextRun = new Date(new Date(base).getTime() + session.recurrence_hours * 3600 * 1000).toLocaleString();
+        }
+    }
+
+    const toggleButton = session.recurrence_active
+        ? `<button class="btn btn-sm btn-outline-secondary" onclick="pauseRecurrence(${session.id}); loadRecurringSessions();">
+               <i class="bi bi-pause-circle"></i> Pause
+           </button>`
+        : `<button class="btn btn-sm btn-outline-success" onclick="resumeRecurrence(${session.id}); loadRecurringSessions();">
+               <i class="bi bi-play-circle"></i> Resume
+           </button>`;
+
+    return `
+        <div class="card mb-2 ${session.recurrence_active ? 'border-success' : 'border-secondary'}" id="recurring-${session.id}">
+            <div class="card-body py-2">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${session.session_name}</strong>
+                        ${activeBadge}
+                        <span class="badge ${session.status === 'running' ? 'bg-warning text-dark' : 'bg-light text-dark'}">
+                            ${session.status === 'running' ? '<i class="bi bi-arrow-repeat"></i> Running now' : session.status}
+                        </span>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-outline-primary" onclick="viewSessionDetails(${session.id})">
+                            <i class="bi bi-eye"></i> Details
+                        </button>
+                        ${toggleButton}
+                    </div>
+                </div>
+                <div class="row mt-1">
+                    <div class="col-md-3">
+                        <small class="text-muted"><i class="bi bi-arrow-repeat"></i> Every ${session.recurrence_hours}h</small>
+                    </div>
+                    <div class="col-md-3">
+                        <small class="text-muted"><i class="bi bi-clock-history"></i> Last run: ${lastRun}</small>
+                    </div>
+                    <div class="col-md-3">
+                        <small class="text-muted"><i class="bi bi-clock"></i> Next run: ${nextRun}</small>
+                    </div>
+                    <div class="col-md-3">
+                        <small class="text-muted"><i class="bi bi-collection-play"></i> ${session.total_videos_found} videos found</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
 
 function loadSessions() {
     const status = $('#statusFilter').val();
@@ -68,6 +160,22 @@ function createSessionCard(session) {
         ? session.filter_keywords.map(k => `<span class="badge bg-info me-1">${k}</span>`).join('')
         : '<span class="text-muted">No filters</span>';
 
+    const recurrenceBadge = session.recurrence_hours
+        ? `<span class="badge ${session.recurrence_active ? 'bg-primary' : 'bg-secondary'}">
+               <i class="bi bi-arrow-repeat"></i> Every ${session.recurrence_hours}h${session.recurrence_active ? '' : ' (paused)'}
+           </span>`
+        : '';
+
+    const recurrenceButton = session.recurrence_hours
+        ? (session.recurrence_active
+            ? `<button class="btn btn-sm btn-outline-secondary" onclick="pauseRecurrence(${session.id})">
+                   <i class="bi bi-pause-circle"></i> Pause Recurrence
+               </button>`
+            : `<button class="btn btn-sm btn-outline-success" onclick="resumeRecurrence(${session.id})">
+                   <i class="bi bi-play-circle"></i> Resume Recurrence
+               </button>`)
+        : '';
+
     const cancelButton = session.status === 'running'
         ? `<button class="btn btn-sm btn-warning" onclick="cancelSession(${session.id})">
                <i class="bi bi-stop-circle"></i> Cancel
@@ -83,6 +191,7 @@ function createSessionCard(session) {
                         <small class="text-muted">${session.session_type}</small>
                     </div>
                     <div>
+                        ${recurrenceBadge}
                         ${statusBadge}
                     </div>
                 </div>
@@ -149,6 +258,7 @@ function createSessionCard(session) {
                     <button class="btn btn-sm btn-info" onclick="viewSessionVideos(${session.id})">
                         <i class="bi bi-collection-play"></i> View Videos
                     </button>
+                    ${recurrenceButton}
                     ${cancelButton}
                     <button class="btn btn-sm btn-danger" onclick="deleteSession(${session.id})">
                         <i class="bi bi-trash"></i> Delete
@@ -157,6 +267,11 @@ function createSessionCard(session) {
             </div>
         </div>
     `;
+}
+
+// Show/hide the custom hours input depending on the preset dropdown (feature 10)
+function toggleRecurrenceCustom() {
+    $('#recurrenceCustomWrap').toggle($('#recurrencePreset').val() === 'custom');
 }
 
 function loadChannelsForSession() {
@@ -208,6 +323,21 @@ function createSession() {
         return;
     }
 
+    // Recurrence (feature 10) — preset dropdown, or the custom input when "Custom..." is selected
+    let recurrenceHours = null;
+    if ($('#recurringToggle').is(':checked')) {
+        const preset = $('#recurrencePreset').val();
+        if (preset === 'custom') {
+            recurrenceHours = parseInt($('#recurrenceHours').val());
+        } else {
+            recurrenceHours = parseInt(preset);
+        }
+        if (isNaN(recurrenceHours) || recurrenceHours < 1 || recurrenceHours > 720) {
+            alert('Recurrence interval must be between 1 and 720 hours');
+            return;
+        }
+    }
+
     const keywordsList = keywords ? keywords.split(',').map(k => k.trim()).filter(k => k) : [];
 
     // Feature 9: auto-generate the session name when none was provided —
@@ -236,7 +366,8 @@ function createSession() {
         session_type: sessionType,
         channel_ids: selectedChannels.map(id => parseInt(id)),
         filter_keywords: keywordsList,
-        max_videos: maxVideos
+        max_videos: maxVideos,
+        recurrence_hours: recurrenceHours
     };
 
     $.ajax({
@@ -302,6 +433,33 @@ function viewSessionDetails(sessionId) {
 
 function viewSessionVideos(sessionId) {
     window.location.href = `/videos?session_id=${sessionId}`;
+}
+
+function pauseRecurrence(sessionId) {
+    if (!confirm('Pause recurrence for this session? Future automatic runs will be cancelled (history is kept).')) return;
+    $.ajax({
+        url: `/api/sessions/${sessionId}/recurrence/pause`,
+        type: 'PUT',
+        success: function() {
+            loadSessions();
+        },
+        error: function(xhr) {
+            alert('Error pausing recurrence: ' + (xhr.responseJSON?.detail || xhr.statusText));
+        }
+    });
+}
+
+function resumeRecurrence(sessionId) {
+    $.ajax({
+        url: `/api/sessions/${sessionId}/recurrence/resume`,
+        type: 'PUT',
+        success: function() {
+            loadSessions();
+        },
+        error: function(xhr) {
+            alert('Error resuming recurrence: ' + (xhr.responseJSON?.detail || xhr.statusText));
+        }
+    });
 }
 
 function cancelSession(sessionId) {

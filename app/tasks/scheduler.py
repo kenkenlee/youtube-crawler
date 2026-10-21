@@ -1,6 +1,6 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 
 from app.config import settings
@@ -8,6 +8,76 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 scheduler = BackgroundScheduler()
+
+
+def recurring_sessions_job():
+    """Check for due recurring sessions and spawn a child run for each.
+
+    A recurring session (recurrence_hours set, recurrence_active true) re-runs
+    every N hours. The session itself acts as the template; each run is a child
+    session (parent_session_id pointing back) so per-run history is preserved.
+    Uses a 1-minute tolerance so a run is spawned when the elapsed time since
+    the last run is >= the configured interval.
+    """
+    from app.database import SessionLocal
+    from app.models.crawl_session import CrawlSession
+    from app.api.sessions import run_crawl_session
+
+    # Skip if a previous tick is still spawning (avoid duplicate child runs)
+    if getattr(scheduler, '_recurring_job_running', False):
+        return
+    scheduler._recurring_job_running = True
+    try:
+        db = SessionLocal()
+        try:
+            templates = db.query(CrawlSession).filter(
+                CrawlSession.recurrence_hours.isnot(None),
+                CrawlSession.recurrence_active.is_(True),
+                CrawlSession.parent_session_id.is_(None)  # templates only, not child runs
+            ).all()
+
+            now = datetime.utcnow()
+            for template in templates:
+                # Don't stack runs if a previous run is still in progress
+                if template.status == 'running':
+                    continue
+
+                last_run = template.completed_at or template.started_at or template.created_at
+                if last_run.tzinfo is not None:
+                    last_run = last_run.replace(tzinfo=None)
+                if now - last_run < timedelta(hours=template.recurrence_hours) - timedelta(minutes=1):
+                    continue  # Not due yet
+
+                child = CrawlSession(
+                    session_name=f"{template.session_name} (auto)",
+                    session_type=template.session_type,
+                    channel_ids=template.channel_ids,
+                    filter_keywords=template.filter_keywords,
+                    max_videos=template.max_videos,
+                    parent_session_id=template.id,
+                    status="pending"
+                )
+                db.add(child)
+                db.commit()
+                db.refresh(child)
+
+                logger.info(
+                    f"Recurring session '{template.session_name}' (#{template.id}) due - "
+                    f"spawned run #{child.id}"
+                )
+                # Run in the background thread pool; the job returns quickly
+                import threading
+                threading.Thread(
+                    target=run_crawl_session,
+                    args=(child.id,),
+                    daemon=True
+                ).start()
+        finally:
+            db.close()
+    except Exception as e:
+        logger.error(f"Error in recurring sessions job: {e}")
+    finally:
+        scheduler._recurring_job_running = False
 
 
 def start_scheduler():
@@ -49,6 +119,16 @@ def start_scheduler():
         CronTrigger(hour=23, minute=55),
         id='daily_summary',
         name='Generate Daily Summary',
+        replace_existing=True
+    )
+
+    # Schedule recurring session runner (checks every minute for due sessions)
+    scheduler.add_job(
+        recurring_sessions_job,
+        'interval',
+        minutes=1,
+        id='recurring_sessions',
+        name='Recurring Sessions Runner',
         replace_existing=True
     )
 
