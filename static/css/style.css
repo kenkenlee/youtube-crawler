@@ -808,33 +808,33 @@ body.dark-mode .skeleton {
 }
 
 .logo-hkpc-img {
-    height: 18px;
+    height: 27px;
     width: auto;
     vertical-align: middle;
 }
 
-/* ===== Feature 6: mind map rendering ===== */
-.mindmap-tree {
-    overflow-x: auto;
-    padding: 8px;
+/* ===== Feature 6: mind map — inline SVG vector rendering ===== */
+.mindmap-svg-wrap {
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    padding: 12px;
+    background-color: #fff;
 }
-.mindmap-node {
-    border-left: 3px solid #0d6efd;
-    margin: 6px 0 6px 10px;
-    padding-left: 12px;
+.mindmap-svg-toolbar .btn {
+    padding: 0.2rem 0.6rem;
+    font-size: 0.8rem;
 }
-.mindmap-label {
-    font-weight: 600;
-    color: #0d6efd;
-    margin-bottom: 4px;
+.mindmap-svg-scroll {
+    overflow: auto;
+    max-height: 480px;
+    max-width: 100%;
 }
-.mindmap-leaf {
-    margin: 3px 0 3px 18px;
-    color: #212529;
+.mindmap-svg {
+    display: block;
 }
-.mindmap-children .mindmap-node .mindmap-label {
-    color: #198754;
-    border-color: #198754;
+.mindmap-svg text {
+    font-family: inherit;
+    user-select: none;
 }
 
 /* ===== Feature 5: detail summary block ===== */
@@ -859,4 +859,10 @@ body.dark-mode .skeleton {
     background-color: #5a32a3;
     border-color: #5a32a3;
     color: #fff;
+}
+
+/* ===== Copy / share buttons on text content blocks ===== */
+.content-actions .btn {
+    padding: 0.15rem 0.5rem;
+    font-size: 0.75rem;
 }
