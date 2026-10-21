@@ -16,7 +16,7 @@
 
 <!-- Search and Filters -->
 <div class="row mb-4">
-    <div class="col-md-3">
+    <div class="col-md-2">
         <input type="text" class="form-control" id="searchQuery" placeholder="Search videos...">
     </div>
     <div class="col-md-2">
@@ -36,6 +36,20 @@
         <select class="form-select" id="sortFilter" title="Sort videos">
             <option value="fetched" selected>Sort: Fetch time</option>
             <option value="published">Sort: Upload time</option>
+        </select>
+    </div>
+    <div class="col-md-1">
+        <select class="form-select" id="orderFilter" title="Sort direction">
+            <option value="desc" selected>Desc</option>
+            <option value="asc">Asc</option>
+        </select>
+    </div>
+    <div class="col-md-1">
+        <select class="form-select" id="browseRowSize" title="Videos per row (browse view)" style="display:none;">
+            <option value="3">3 / row</option>
+            <option value="4">4 / row</option>
+            <option value="5" selected>5 / row</option>
+            <option value="6">6 / row</option>
         </select>
     </div>
     <div class="col-md-2">
@@ -90,9 +104,6 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" id="regenerateSummaryBtn" onclick="regenerateSummary()">
-                    <i class="bi bi-arrow-clockwise"></i> Regenerate Summary
-                </button>
             </div>
         </div>
     </div>

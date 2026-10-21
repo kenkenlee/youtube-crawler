@@ -34,6 +34,8 @@ class VideoResponse(VideoBase):
     transcript_text: Optional[str] = None
     summary_text: Optional[str] = None
     summary_generated_at: Optional[datetime] = None
+    detail_summary: Optional[str] = None
+    detail_summary_generated_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
 
@@ -50,3 +52,13 @@ class VideoWithChannel(VideoResponse):
 class VideoSummaryRequest(BaseModel):
     video_id: int
     force_regenerate: bool = False
+
+
+class DetailSummaryRequest(BaseModel):
+    video_id: int
+    force_regenerate: bool = False
+
+
+class MindMapRequest(BaseModel):
+    video_id: int
+    format: str = "markdown"  # "markdown" or "json"

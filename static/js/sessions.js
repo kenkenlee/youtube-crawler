@@ -1,6 +1,7 @@
 // Sessions Management JavaScript
 
 let activeWebSockets = {};
+let sessionChannelsData = [];  // cached channel list for sorting / auto-naming
 
 $(document).ready(function() {
     loadSessions();
@@ -9,6 +10,11 @@ $(document).ready(function() {
     // Filter change
     $('#statusFilter').change(function() {
         loadSessions();
+    });
+
+    // Channel list sorting (feature 8.1)
+    $('#channelSort').change(function() {
+        renderChannelOptions();
     });
 
     // Auto-refresh every 10 seconds
@@ -155,25 +161,45 @@ function createSessionCard(session) {
 
 function loadChannelsForSession() {
     $.get('/api/channels?limit=100', function(data) {
-        const select = $('#sessionChannels');
-        select.empty();
+        sessionChannelsData = data;
+        renderChannelOptions();
+    });
+}
 
-        data.forEach(function(channel) {
-            const enabled = channel.crawl_enabled ? '' : ' (disabled)';
-            select.append(`<option value="${channel.id}">${channel.channel_name}${enabled}</option>`);
+// Render channel options in the current sort order (feature 8.1)
+function renderChannelOptions() {
+    const select = $('#sessionChannels');
+    const sortMode = $('#channelSort').val() || 'name';
+    const channels = [...sessionChannelsData];
+
+    if (sortMode === 'added') {
+        // Date added = when the channel record was created (newest first)
+        channels.sort(function(a, b) {
+            return new Date(b.created_at || 0) - new Date(a.created_at || 0);
         });
+    } else {
+        // Default: alphabetical by channel name
+        channels.sort(function(a, b) {
+            return (a.channel_name || '').localeCompare(b.channel_name || '');
+        });
+    }
+
+    select.empty();
+    channels.forEach(function(channel) {
+        const enabled = channel.crawl_enabled ? '' : ' (disabled)';
+        select.append(`<option value="${channel.id}">${channel.channel_name}${enabled}</option>`);
     });
 }
 
 function createSession() {
-    const sessionName = $('#sessionName').val();
+    let sessionName = $('#sessionName').val();
     const sessionType = $('#sessionType').val();
     const selectedChannels = $('#sessionChannels').val();
     const keywords = $('#sessionKeywords').val();
     const maxVideos = parseInt($('#maxVideos').val()) || 5;
 
-    if (!sessionName || !selectedChannels || selectedChannels.length === 0) {
-        alert('Please fill in all required fields');
+    if (!selectedChannels || selectedChannels.length === 0) {
+        alert('Please select at least one channel');
         return;
     }
 
@@ -183,6 +209,27 @@ function createSession() {
     }
 
     const keywordsList = keywords ? keywords.split(',').map(k => k.trim()).filter(k => k) : [];
+
+    // Feature 9: auto-generate the session name when none was provided —
+    // selected channel names + filter keywords + date + time.
+    if (!sessionName || sessionName.trim() === '') {
+        const channelNames = selectedChannels.map(function(id) {
+            const ch = sessionChannelsData.find(c => String(c.id) === String(id));
+            return ch ? ch.channel_name : `Channel ${id}`;
+        });
+        const now = new Date();
+        const dateStr = now.getFullYear() + '-' +
+            String(now.getMonth() + 1).padStart(2, '0') + '-' +
+            String(now.getDate()).padStart(2, '0');
+        const timeStr = String(now.getHours()).padStart(2, '0') + ':' +
+            String(now.getMinutes()).padStart(2, '0');
+        const parts = [channelNames.join(', ')];
+        if (keywordsList.length > 0) {
+            parts.push('[' + keywordsList.join(', ') + ']');
+        }
+        parts.push(dateStr, timeStr);
+        sessionName = parts.join(' - ');
+    }
 
     const payload = {
         session_name: sessionName,

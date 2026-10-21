@@ -6,6 +6,7 @@ from datetime import datetime
 from pydantic import BaseModel
 import logging
 import os
+import re
 import tempfile
 
 from app.database import get_db
@@ -155,6 +156,7 @@ def list_videos(
     has_summary: Optional[bool] = None,
     keyword: Optional[str] = None,
     sort_by: str = Query("fetched", pattern="^(fetched|published)$", description="fetched = session fetch time (default), published = video upload time"),
+    order: str = Query("desc", pattern="^(asc|desc)$", description="desc (default) or asc sort direction"),
     db: Session = Depends(get_db)
 ):
     """List videos with filters"""
@@ -178,10 +180,15 @@ def list_videos(
 
     # Sort: "fetched" = when the video was pulled into the DB by a session
     # (Video.created_at); "published" = when the video was uploaded to YouTube.
+    # `order` = asc/desc direction (default desc = newest first).
     if sort_by == "published":
-        query = query.order_by(Video.published_at.desc().nullslast())
+        col = Video.published_at
     else:
-        query = query.order_by(Video.created_at.desc().nullslast())
+        col = Video.created_at
+    if order == "asc":
+        query = query.order_by(col.asc().nullslast())
+    else:
+        query = query.order_by(col.desc().nullslast())
 
     videos = query.offset(skip).limit(limit).all()
 
@@ -296,7 +303,7 @@ async def summarize_video(
 
 @router.get("/{video_id}/transcript")
 def get_video_transcript(video_id: int, db: Session = Depends(get_db)):
-    """Get video transcript"""
+    """Get video transcript (fetch + format if not already stored)"""
     video = db.query(Video).filter(Video.id == video_id).first()
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
@@ -304,11 +311,12 @@ def get_video_transcript(video_id: int, db: Session = Depends(get_db)):
     if not video.transcript_text:
         # Try to extract transcript
         from app.services.transcript_service import TranscriptService
+        from app.services.transcript_formatter import format_transcript
         transcript_service = TranscriptService()
         transcript = transcript_service.get_transcript(video.video_id)
 
         if transcript:
-            video.transcript_text = transcript
+            video.transcript_text = format_transcript(transcript)
             db.commit()
         else:
             raise HTTPException(status_code=404, detail="Transcript not available for this video")
@@ -317,6 +325,74 @@ def get_video_transcript(video_id: int, db: Session = Depends(get_db)):
         "video_id": video.video_id,
         "title": video.title,
         "transcript": video.transcript_text
+    }
+
+
+@router.post("/{video_id}/detail-summary")
+async def generate_detail_summary(video_id: int, force_regenerate: bool = False, db: Session = Depends(get_db)):
+    """Generate a well-structured detail summary from the video's transcript (feature 5)."""
+    video = db.query(Video).filter(Video.id == video_id).first()
+    if not video:
+        raise HTTPException(status_code=404, detail="Video not found")
+
+    if not video.transcript_text:
+        raise HTTPException(
+            status_code=400,
+            detail="Transcript not downloaded yet. Use 'Get Transcript' first."
+        )
+
+    if video.detail_summary and not force_regenerate:
+        return {
+            "message": "Detail summary already exists",
+            "detail_summary": video.detail_summary,
+            "generated_at": video.detail_summary_generated_at
+        }
+
+    from app.services.summarizer_service import SummarizerService
+    summarizer = SummarizerService()
+    channel_name = video.channel.channel_name if video.channel else ""
+    detail_summary = summarizer.generate_detail_summary(
+        video.transcript_text, title=video.title, channel_name=channel_name
+    )
+
+    if not detail_summary:
+        raise HTTPException(status_code=502, detail="Summary generation failed — check that an LLM API key is configured")
+
+    video.detail_summary = detail_summary
+    video.detail_summary_generated_at = datetime.now()
+    db.commit()
+
+    return {
+        "message": "Detail summary generated",
+        "detail_summary": detail_summary,
+        "generated_at": video.detail_summary_generated_at
+    }
+
+
+@router.post("/{video_id}/mindmap")
+def generate_video_mindmap(video_id: int, db: Session = Depends(get_db)):
+    """Generate a mind map from the video's detail summary (feature 6)."""
+    video = db.query(Video).filter(Video.id == video_id).first()
+    if not video:
+        raise HTTPException(status_code=404, detail="Video not found")
+
+    if not video.detail_summary:
+        raise HTTPException(
+            status_code=400,
+            detail="Detail summary not generated yet. Use 'Generate Summary' first."
+        )
+
+    from app.services.summarizer_service import SummarizerService
+    summarizer = SummarizerService()
+    mind_map = summarizer.generate_mind_map(video.detail_summary, title=video.title)
+
+    if not mind_map:
+        raise HTTPException(status_code=502, detail="Mind map generation failed — check that an LLM API key is configured")
+
+    return {
+        "message": "Mind map generated",
+        "video_id": video_id,
+        "mind_map": mind_map
     }
 
 
@@ -339,10 +415,55 @@ def delete_video(video_id: int, db: Session = Depends(get_db)):
 
 @router.get("/{video_id}/download")
 async def download_video(video_id: int, db: Session = Depends(get_db)):
-    """Not supported — the YouTube Data API does not provide video downloads."""
-    raise HTTPException(
-        status_code=410,
-        detail="Video download is not supported: this app uses the YouTube Data API exclusively."
+    """Download the video's data as a text file.
+
+    The YouTube Data API does not provide video file downloads, so this
+    exports everything stored for the video: metadata, transcript and
+    summaries — as a downloadable .txt file.
+    """
+    video = db.query(Video).filter(Video.id == video_id).first()
+    if not video:
+        raise HTTPException(status_code=404, detail="Video not found")
+
+    channel_name = video.channel.channel_name if video.channel else "Unknown"
+    lines = [
+        f"Title: {video.title}",
+        f"URL: https://www.youtube.com/watch?v={video.video_id}",
+        f"Channel: {channel_name}",
+        f"Published: {video.published_at or 'Unknown'}",
+        f"Duration: {video.duration or 0} seconds",
+        f"Views: {video.view_count or 0}",
+        f"Likes: {video.like_count or 0}",
+        "",
+        "=" * 60,
+        "DESCRIPTION",
+        "=" * 60,
+        video.description or "No description",
+        "",
+        "=" * 60,
+        "AI SUMMARY",
+        "=" * 60,
+        video.summary_text or "No summary generated",
+        "",
+        "=" * 60,
+        "DETAIL SUMMARY",
+        "=" * 60,
+        video.detail_summary or "No detail summary generated",
+        "",
+        "=" * 60,
+        "TRANSCRIPT",
+        "=" * 60,
+        video.transcript_text or "No transcript downloaded",
+    ]
+
+    filename = re.sub(r'[^A-Za-z0-9 _-]', '', video.title)[:50].strip().replace(' ', '_') or f"video_{video.video_id}"
+    from fastapi.responses import Response
+    return Response(
+        content="\n".join(lines),
+        media_type="text/plain; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}.txt"'
+        }
     )
 
 
