@@ -13,6 +13,45 @@ from app.models import Channel, Video, CrawlSession, SessionVideo
 # Create database tables
 def init_db():
     Base.metadata.create_all(bind=engine)
+    _apply_lightweight_migrations()
+
+
+def _apply_lightweight_migrations():
+    """Add columns that exist in the models but not in older database files.
+
+    SQLite supports ALTER TABLE ADD COLUMN, so missing columns can be added
+    in place without a full migration framework. Backfills sensible values
+    where applicable.
+    """
+    from sqlalchemy import text, inspect
+
+    migrations = {
+        "videos": [
+            ("video_url", "ALTER TABLE videos ADD COLUMN video_url VARCHAR(500)"),
+            ("thumbnail_url", "ALTER TABLE videos ADD COLUMN thumbnail_url VARCHAR(500)"),
+        ],
+        "channels": [
+            ("thumbnail_url", "ALTER TABLE channels ADD COLUMN thumbnail_url VARCHAR(500)"),
+        ],
+    }
+
+    with engine.connect() as conn:
+        inspector = inspect(engine)
+        existing_tables = inspector.get_table_names()
+        for table, columns in migrations.items():
+            if table not in existing_tables:
+                continue
+            existing_columns = {c["name"] for c in inspector.get_columns(table)}
+            for column, ddl in columns:
+                if column not in existing_columns:
+                    print(f"Applying migration: {ddl}")
+                    conn.execute(text(ddl))
+        # Backfill video URLs for pre-existing rows
+        conn.execute(text(
+            "UPDATE videos SET video_url = 'https://www.youtube.com/watch?v=' || video_id "
+            "WHERE video_url IS NULL AND video_id IS NOT NULL"
+        ))
+        conn.commit()
 
 
 @asynccontextmanager

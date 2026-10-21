@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "sqlite:///./data/database.db"
 
-    # YouTube API
+    # YouTube API (REQUIRED — crawling uses the YouTube Data API exclusively)
     YOUTUBE_API_KEY: Optional[str] = None
 
     # OpenAI API

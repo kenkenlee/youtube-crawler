@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
 from pydantic import BaseModel
+import logging
 import os
 import tempfile
 
@@ -15,13 +16,15 @@ from app.schemas.video import VideoResponse, VideoWithChannel, VideoSummaryReque
 from app.services.crawler_service import CrawlerService
 from app.services.export_service import ExportService
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
 
 
 class AddSingleVideoRequest(BaseModel):
     video_url: str
     video_id: str
-    channel_id: int
+    channel_id: Optional[int] = None  # Optional — resolved automatically from YouTube when omitted
     auto_summarize: bool = False
 
 
@@ -31,70 +34,119 @@ async def add_single_video(
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
-    """Add a single video by URL"""
-    import yt_dlp
+    """Add a single video by URL (via YouTube Data API).
+
+    When channel_id is omitted, the video's owning channel is looked up on
+    YouTube and added to the database automatically (so it becomes selectable
+    in future crawl sessions).
+    """
+    from app.api.channels import _generate_reference_id, _unique_reference_id
 
     # Check if video already exists
     existing_video = db.query(Video).filter(Video.video_id == request.video_id).first()
     if existing_video:
         raise HTTPException(status_code=400, detail="Video already exists in database")
 
-    # Check if channel exists
-    channel = db.query(Channel).filter(Channel.id == request.channel_id).first()
-    if not channel:
-        raise HTTPException(status_code=404, detail="Channel not found")
+    # Resolve the target channel: explicit selection wins, otherwise look it up on YouTube
+    youtube_service = None
+    channel = None
+    info = None
+
+    if request.channel_id:
+        channel = db.query(Channel).filter(Channel.id == request.channel_id).first()
+        if not channel:
+            raise HTTPException(status_code=404, detail="Channel not found")
+    else:
+        from app.services.youtube_service import YouTubeService
+        youtube_service = YouTubeService()
+
+        # Fetch video details now — reused below so we only hit the API once
+        info = youtube_service.get_video_details(request.video_id)
+        if not info:
+            raise HTTPException(status_code=404, detail="Video not found on YouTube")
+
+        yt_channel_id = info.get('channel_id')
+        if not yt_channel_id:
+            raise HTTPException(status_code=400, detail="Could not determine the video's channel from YouTube")
+
+        # Get-or-create the channel record for this YouTube channel
+        channel = db.query(Channel).filter(Channel.youtube_channel_id == yt_channel_id).first()
+        if not channel:
+            channel_info = youtube_service.get_channel_info(yt_channel_id)
+            if not channel_info:
+                raise HTTPException(status_code=404, detail="The video's channel could not be found on YouTube")
+
+            channel = Channel(
+                channel_id=_unique_reference_id(
+                    db,
+                    _generate_reference_id(channel_info['channel_name'], channel_info['channel_url'])
+                ),
+                youtube_channel_id=yt_channel_id,
+                channel_name=channel_info['channel_name'],
+                channel_url=channel_info['channel_url'],
+                description=channel_info.get('description', ''),
+                keywords=[],
+                crawl_enabled=True,
+                crawl_frequency='manual'
+            )
+            db.add(channel)
+            db.commit()
+            db.refresh(channel)
+            logger.info(f"Auto-added channel '{channel.channel_name}' while adding video {request.video_id}")
+
+    video_url = f"https://www.youtube.com/watch?v={request.video_id}"
+
+    if youtube_service is None:
+        from app.services.youtube_service import YouTubeService
+        youtube_service = YouTubeService()
+
+    if info is None:
+        info = youtube_service.get_video_details(request.video_id)
+        if not info:
+            raise HTTPException(status_code=404, detail="Video not found on YouTube")
 
     try:
-        video_url = f"https://www.youtube.com/watch?v={request.video_id}"
+        # Create video object
+        video = Video(
+            video_id=request.video_id,
+            channel_id=channel.id,
+            title=info.get('title', ''),
+            description=info.get('description', ''),
+            duration=info.get('duration', 0),
+            published_at=info.get('published_at'),
+            view_count=info.get('view_count', 0),
+            like_count=info.get('like_count', 0),
+            comment_count=info.get('comment_count', 0),
+            tags=info.get('tags', []),
+            video_url=video_url,
+            thumbnail_url=info.get('thumbnail', '')
+        )
 
-        ydl_opts = {
-            'quiet': True,
-            'no_warnings': True,
-        }
-
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(video_url, download=False)
-
-            if not info:
-                raise HTTPException(status_code=404, detail="Video not found on YouTube")
-
-            # Create video object
-            video = Video(
-                video_id=request.video_id,
-                channel_id=request.channel_id,
-                title=info.get('title', ''),
-                description=info.get('description', ''),
-                duration=info.get('duration', 0),
-                published_at=datetime.fromtimestamp(info.get('timestamp', 0)) if info.get('timestamp') else None,
-                view_count=info.get('view_count', 0),
-                like_count=info.get('like_count', 0),
-                comment_count=info.get('comment_count', 0),
-                tags=info.get('tags', []),
-                video_url=video_url,
-                thumbnail_url=info.get('thumbnail', '')
-            )
-
-            db.add(video)
-            db.commit()
-            db.refresh(video)
-
-            # Generate summary if requested
-            if request.auto_summarize:
-                crawler_service = CrawlerService(db)
-                background_tasks.add_task(crawler_service.summarize_video, video)
-
-            return {
-                "message": "Video added successfully",
-                "video_id": video.id,
-                "title": video.title,
-                "auto_summarize": request.auto_summarize
-            }
+        db.add(video)
+        db.commit()
+        db.refresh(video)
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch video info: {str(e)}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to add video: {e}")
+
+    # Generate summary if requested
+    if request.auto_summarize:
+        crawler_service = CrawlerService(db)
+        background_tasks.add_task(crawler_service.summarize_video, video)
+
+    return {
+        "message": "Video added successfully",
+        "video_id": video.id,
+        "title": video.title,
+        "channel_id": channel.id,
+        "channel_name": channel.channel_name,
+        "channel_created": request.channel_id is None,
+        "auto_summarize": request.auto_summarize
+    }
 
 
-@router.get("/", response_model=List[VideoResponse])
+@router.get("/", response_model=List[VideoWithChannel])
 def list_videos(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
@@ -124,7 +176,17 @@ def list_videos(
 
     videos = query.order_by(Video.published_at.desc()).offset(skip).limit(limit).all()
 
-    return videos
+    # Include channel info so the frontend can display the channel name
+    result = []
+    for video in videos:
+        video_dict = {
+            **video.__dict__,
+            'channel_name': video.channel.channel_name if video.channel else 'Unknown Channel',
+            'channel_url': video.channel.channel_url if video.channel else ''
+        }
+        result.append(VideoWithChannel(**video_dict))
+
+    return result
 
 
 @router.get("/search", response_model=List[VideoWithChannel])
@@ -156,8 +218,8 @@ def search_videos(
     for video in videos:
         video_dict = {
             **video.__dict__,
-            'channel_name': video.channel.channel_name,
-            'channel_url': video.channel.channel_url
+            'channel_name': video.channel.channel_name if video.channel else 'Unknown Channel',
+            'channel_url': video.channel.channel_url if video.channel else ''
         }
         result.append(VideoWithChannel(**video_dict))
 
@@ -173,8 +235,8 @@ def get_video(video_id: int, db: Session = Depends(get_db)):
 
     video_dict = {
         **video.__dict__,
-        'channel_name': video.channel.channel_name,
-        'channel_url': video.channel.channel_url
+        'channel_name': video.channel.channel_name if video.channel else 'Unknown Channel',
+        'channel_url': video.channel.channel_url if video.channel else ''
     }
 
     return VideoWithChannel(**video_dict)
@@ -200,9 +262,19 @@ async def summarize_video(
             "generated_at": video.summary_generated_at
         }
 
-    # Generate summary in background
-    crawler_service = CrawlerService(db)
-    background_tasks.add_task(crawler_service.summarize_video, video)
+    # Generate summary in background; open a fresh DB session because the
+    # request session is closed before background tasks execute
+    def _run_summarize_task(video_id: int):
+        from app.database import SessionLocal
+        db = SessionLocal()
+        try:
+            crawler_service = CrawlerService(db)
+            import asyncio
+            asyncio.run(crawler_service.summarize_video(db.query(Video).filter(Video.id == video_id).first()))
+        finally:
+            db.close()
+
+    background_tasks.add_task(_run_summarize_task, video_id)
 
     return {
         "message": "Summary generation started",
@@ -255,48 +327,11 @@ def delete_video(video_id: int, db: Session = Depends(get_db)):
 
 @router.get("/{video_id}/download")
 async def download_video(video_id: int, db: Session = Depends(get_db)):
-    """Download a video using yt-dlp"""
-    video = db.query(Video).filter(Video.id == video_id).first()
-    if not video:
-        raise HTTPException(status_code=404, detail="Video not found")
-
-    try:
-        import yt_dlp
-
-        # Create a temporary directory for downloads
-        temp_dir = tempfile.mkdtemp()
-        output_template = os.path.join(temp_dir, '%(title)s.%(ext)s')
-
-        # Configure yt-dlp options
-        ydl_opts = {
-            'format': 'best[ext=mp4]/best',  # Prefer mp4 format
-            'outtmpl': output_template,
-            'quiet': True,
-            'no_warnings': True,
-        }
-
-        # Download the video
-        video_url = f"https://www.youtube.com/watch?v={video.video_id}"
-
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(video_url, download=True)
-            filename = ydl.prepare_filename(info)
-
-        # Return the file as a download
-        if os.path.exists(filename):
-            return FileResponse(
-                path=filename,
-                filename=os.path.basename(filename),
-                media_type='video/mp4',
-                headers={
-                    "Content-Disposition": f"attachment; filename={os.path.basename(filename)}"
-                }
-            )
-        else:
-            raise HTTPException(status_code=500, detail="Failed to download video")
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Download failed: {str(e)}")
+    """Not supported — the YouTube Data API does not provide video downloads."""
+    raise HTTPException(
+        status_code=410,
+        detail="Video download is not supported: this app uses the YouTube Data API exclusively."
+    )
 
 
 @router.get("/export/csv")

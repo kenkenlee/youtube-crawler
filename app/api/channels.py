@@ -6,27 +6,72 @@ from datetime import datetime
 from app.database import get_db
 from app.models.channel import Channel
 from app.models.video import Video
-from app.schemas.channel import ChannelCreate, ChannelUpdate, ChannelResponse, ChannelWithStats
+from app.schemas.channel import ChannelCreate, ChannelCreateFromUrl, ChannelUpdate, ChannelResponse, ChannelWithStats
 from app.services.youtube_service import YouTubeService
 
 router = APIRouter()
 
 
+def _generate_reference_id(channel_name: str, channel_url: str) -> str:
+    """Generate a unique reference ID from the channel name (or URL as fallback)"""
+    import re as _re
+    from sqlalchemy.orm import Session as _Session
+
+    source = channel_name if channel_name else channel_url.rstrip('/').split('/')[-1]
+    base = _re.sub(r'[^a-zA-Z0-9-_]+', '-', source).strip('-').lower() or 'channel'
+    return base
+
+
+def _unique_reference_id(db: Session, base: str) -> str:
+    """Append a numeric suffix until the reference ID is unique"""
+    candidate = base
+    counter = 2
+    while db.query(Channel).filter(Channel.channel_id == candidate).first():
+        candidate = f"{base}-{counter}"
+        counter += 1
+    return candidate
+
+
 @router.post("/", response_model=ChannelResponse, status_code=201)
 def create_channel(channel: ChannelCreate, db: Session = Depends(get_db)):
-    """Create a new channel with user-defined reference ID"""
-    # Check if channel already exists (by user's reference ID)
-    existing = db.query(Channel).filter(Channel.channel_id == channel.channel_id).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="A channel with this reference ID already exists")
+    """Create a new channel. Reference ID and channel name are auto-assigned when omitted."""
+    # Resolve the YouTube channel ID from the URL when possible
+    youtube_service = YouTubeService()
+    youtube_channel_id = channel.youtube_channel_id
+    channel_name = channel.channel_name
 
-    # Create channel with user's data (no validation needed)
-    # YouTube channel ID will be extracted during first crawl
+    if youtube_channel_id is None:
+        youtube_channel_id = youtube_service.extract_channel_id(channel.channel_url)
+
+    # Fetch channel metadata from YouTube when the name wasn't provided
+    channel_info = None
+    if youtube_channel_id:
+        channel_info = youtube_service.get_channel_info(youtube_channel_id)
+
+    if channel_info:
+        if not channel_name:
+            channel_name = channel_info['channel_name']
+        canonical_url = channel_info['channel_url']
+    else:
+        canonical_url = channel.channel_url
+
+    # Auto-generate the reference ID from the channel name (or URL)
+    reference_id = channel.channel_id
+    if not reference_id:
+        reference_id = _unique_reference_id(
+            db,
+            _generate_reference_id(channel_name or '', canonical_url)
+        )
+    else:
+        existing = db.query(Channel).filter(Channel.channel_id == reference_id).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="A channel with this reference ID already exists")
+
     db_channel = Channel(
-        channel_id=channel.channel_id,  # User-defined reference ID
-        youtube_channel_id=None,  # Will be extracted during crawl
-        channel_name=channel.channel_name,
-        channel_url=channel.channel_url,
+        channel_id=reference_id,  # User-defined or auto-generated reference ID
+        youtube_channel_id=youtube_channel_id,
+        channel_name=channel_name or reference_id,
+        channel_url=canonical_url,
         description=channel.description,
         keywords=channel.keywords,
         crawl_enabled=channel.crawl_enabled,
@@ -158,21 +203,20 @@ def get_channel_videos(
 
 
 @router.post("/from-url", response_model=ChannelResponse, status_code=201)
-def create_channel_from_url(data: dict, db: Session = Depends(get_db)):
-    """Create a channel from a YouTube URL"""
-    url = data.get('url')
-    if not url:
-        raise HTTPException(status_code=400, detail="URL is required")
-
+def create_channel_from_url(data: ChannelCreateFromUrl, db: Session = Depends(get_db)):
+    """Create a channel from a YouTube URL. Reference ID and name are assigned automatically."""
     youtube_service = YouTubeService()
 
     # Extract channel ID from URL
-    channel_id = youtube_service.extract_channel_id(url)
+    channel_id = youtube_service.extract_channel_id(data.url)
     if not channel_id:
         raise HTTPException(status_code=400, detail="Could not extract channel ID from URL. Supported formats: /channel/UCxxx, /@username, /c/name, /user/name")
 
-    # Check if channel already exists
-    existing = db.query(Channel).filter(Channel.channel_id == channel_id).first()
+    # Check if this YouTube channel has already been added
+    existing = db.query(Channel).filter(
+        (Channel.youtube_channel_id == channel_id) |
+        (Channel.channel_url == data.url)
+    ).first()
     if existing:
         raise HTTPException(status_code=400, detail="Channel already exists")
 
@@ -181,15 +225,19 @@ def create_channel_from_url(data: dict, db: Session = Depends(get_db)):
     if not channel_info:
         raise HTTPException(status_code=404, detail="Channel not found on YouTube")
 
+    # Auto-generate a unique reference ID from the channel name
+    reference_id = _unique_reference_id(db, _generate_reference_id(channel_info['channel_name'], data.url))
+
     # Create channel
     db_channel = Channel(
-        channel_id=channel_id,
+        channel_id=reference_id,
+        youtube_channel_id=channel_id,
         channel_name=channel_info['channel_name'],
         channel_url=channel_info['channel_url'],
-        description=channel_info.get('description', ''),
-        keywords=[],
-        crawl_enabled=True,
-        crawl_frequency='manual'
+        description=data.description,
+        keywords=data.keywords,
+        crawl_enabled=data.crawl_enabled,
+        crawl_frequency=data.crawl_frequency
     )
     db.add(db_channel)
     db.commit()
