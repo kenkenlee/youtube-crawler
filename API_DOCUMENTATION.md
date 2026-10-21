@@ -535,6 +535,73 @@ curl -X POST "http://127.0.0.1:5000/api/videos/1/summarize?style=concise"
 
 ---
 
+## Deployment Instructions
+
+The API server is a FastAPI application started via `run.py`. Full deployment
+details (Docker, production setup, systemd, Nginx) live in
+[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md). The essentials:
+
+### Quick Start
+
+```bash
+# 1. Clone and enter the project
+git clone https://github.com/kenkenlee/youtube-crawler.git
+cd youtube-crawler
+
+# 2. Install dependencies
+pip install -r requirements.txt
+
+# 3. Configure environment (copy .env.example to .env and edit)
+cp .env.example .env
+
+# 4. Start the server
+python run.py
+```
+
+The API is now available at `http://127.0.0.1:5000` with interactive docs at
+`/docs` (Swagger UI) and `/redoc` (ReDoc).
+
+### Interactive Installation Wizard
+
+Alternatively, `install.py` walks through the whole setup - virtual
+environment, database location, API keys, and crawler options - and writes
+the result to `.env`:
+
+```bash
+python install.py           # interactive wizard
+python install.py --yes     # accept all defaults, no prompts
+```
+
+After the wizard, start the server with the venv Python it created:
+
+```bash
+# Windows
+.venv\Scripts\python.exe run.py
+
+# Linux/Mac
+.venv/bin/python run.py
+```
+
+### Production
+
+For production use a multi-worker ASGI server behind a reverse proxy, and
+never expose `DEBUG=True` publicly:
+
+```bash
+gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker -b 127.0.0.1:5000
+```
+
+See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for Nginx configuration,
+systemd service setup, Docker Compose, and database migration steps.
+
+### WebSocket Note
+
+The `/ws/crawl/{session_id}` WebSocket requires a proxy that supports the
+Upgrade handshake - see the Nginx `location /ws` block in
+[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md).
+
+---
+
 ## Changelog
 
 ### Version 1.0.0 (2024-02-06)
