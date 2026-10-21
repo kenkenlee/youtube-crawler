@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Dict
+from typing import List, Dict, Optional
 from datetime import datetime
 
 
@@ -34,5 +34,5 @@ class RecentActivity(BaseModel):
     activity_type: str
     description: str
     status: str
-    session_id: int = None
-    channel_id: int = None
+    session_id: Optional[int] = None
+    channel_id: Optional[int] = None

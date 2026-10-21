@@ -268,6 +268,11 @@ class CrawlerService:
         """
         logger.info(f"Summarizing video: {video.title}")
 
+        # Re-fetch within the current session so the latest persisted transcript
+        # is used (a transcript may have been downloaded after this object was loaded)
+        if video.id:
+            video = self.db.query(Video).filter(Video.id == video.id).first() or video
+
         # Extract transcript if not already present
         if not video.transcript_text:
             transcript = self.transcript_service.get_transcript(video.video_id)

@@ -19,6 +19,8 @@ class Video(Base):
     comment_count = Column(BigInteger, default=0)
     tags = Column(JSON, default=list)
     matched_keywords = Column(JSON, default=list)  # Keywords that matched this video
+    video_url = Column(String(500), nullable=True)
+    thumbnail_url = Column(String(500), nullable=True)
     transcript_text = Column(Text, nullable=True)
     summary_text = Column(Text, nullable=True)
     summary_generated_at = Column(DateTime, nullable=True)

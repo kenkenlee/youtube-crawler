@@ -4,7 +4,6 @@ let currentChannelPage = 0;
 
 $(document).ready(function() {
     loadChannels();
-    loadChannelsForVideoSelect();
 
     // Filter by active only
     $('#showActiveOnly').change(function() {
@@ -146,53 +145,66 @@ function createChannelCard(channel) {
 }
 
 function addChannel() {
-    const channelId = $('#channelId').val().trim();
-    const channelName = $('#channelName').val().trim();
     const channelUrl = $('#channelUrl').val().trim();
     const description = $('#channelDescription').val().trim();
     const keywords = $('#channelKeywords').val();
     const crawlFrequency = $('#crawlFrequency').val();
     const crawlEnabled = $('#crawlEnabled').is(':checked');
 
-    // Validate required fields
-    if (!channelId || !channelName || !channelUrl) {
-        alert('Please fill in all required fields (Reference ID, Channel Name, and URL)');
-        return;
-    }
-
-    // Validate reference ID format (alphanumeric and hyphens only)
-    if (!/^[a-zA-Z0-9-_]+$/.test(channelId)) {
-        alert('Reference ID can only contain letters, numbers, hyphens, and underscores');
+    // URL is the only required field
+    if (!channelUrl) {
+        alert('Please enter the YouTube Channel URL');
         return;
     }
 
     const keywordsList = keywords ? keywords.split(',').map(k => k.trim()).filter(k => k) : [];
 
     const payload = {
-        channel_id: channelId,
-        youtube_channel_id: null,  // Will be auto-extracted if needed
-        channel_name: channelName,
-        channel_url: channelUrl,
-        description: description,
+        url: channelUrl,
+        description: description || null,
         keywords: keywordsList,
         crawl_enabled: crawlEnabled,
         crawl_frequency: crawlFrequency
     };
 
+    // Show loading state — fetching channel info from YouTube can take a moment
+    const originalText = $('#addChannelModal .btn-primary').text();
+    $('#addChannelModal .btn-primary').text('Fetching channel info...').prop('disabled', true);
+
     $.ajax({
-        url: '/api/channels',
+        url: '/api/channels/from-url',
         method: 'POST',
         contentType: 'application/json',
         data: JSON.stringify(payload),
+        timeout: 60000, // recover if the server dies mid-request instead of hanging forever
         success: function(response) {
-            alert('Channel added successfully!');
+            $('#addChannelModal .btn-primary').text(originalText).prop('disabled', false);
+            alert(`Channel added! Reference ID: ${response.channel_id}, Name: ${response.channel_name}`);
             $('#addChannelModal').modal('hide');
             $('#addChannelForm')[0].reset();
             loadChannels();
         },
-        error: function(xhr) {
+        error: function(xhr, textStatus) {
+            $('#addChannelModal .btn-primary').text(originalText).prop('disabled', false);
+
+            if (textStatus === 'timeout') {
+                alert('The request timed out. The channel may have been added — refresh the page to check.');
+                loadChannels();
+                return;
+            }
+            if (xhr.status === 0) {
+                alert('Lost connection to the server (it may have restarted). The channel may have been added — refresh the page to check.');
+                loadChannels();
+                return;
+            }
+
             if (xhr.status === 400 && xhr.responseJSON?.detail?.includes('already exists')) {
-                alert('A channel with this Reference ID already exists. Please use a different ID.');
+                alert('This channel already exists in your database.');
+                loadChannels();
+            } else if (xhr.status === 400) {
+                alert('Could not extract channel ID from URL. Please check the URL format (e.g., https://www.youtube.com/@channelname).');
+            } else if (xhr.status === 404) {
+                alert('Channel not found on YouTube. Please check the URL.');
             } else {
                 alert('Failed to add channel: ' + (xhr.responseJSON?.detail || 'Unknown error'));
             }
@@ -220,68 +232,6 @@ function extractChannelId(url) {
     if (match) return match[1];
 
     return null;
-}
-
-function addChannelFromUrl(channelUrl, channelName, description, keywords, crawlFrequency, crawlEnabled) {
-    // Use the from-url endpoint which handles all URL formats
-    const keywordsList = keywords ? keywords.split(',').map(k => k.trim()).filter(k => k) : [];
-
-    // Show loading message
-    const originalText = $('#addChannelModal .btn-primary').text();
-    $('#addChannelModal .btn-primary').text('Fetching channel info...').prop('disabled', true);
-
-    $.ajax({
-        url: '/api/channels/from-url',
-        method: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify({ url: channelUrl }),
-        success: function(response) {
-            // Channel created successfully, now update it with user's settings
-            const channelId = response.id;
-
-            const updatePayload = {
-                channel_name: channelName,
-                description: description,
-                keywords: keywordsList,
-                crawl_enabled: crawlEnabled,
-                crawl_frequency: crawlFrequency
-            };
-
-            $.ajax({
-                url: `/api/channels/${channelId}`,
-                method: 'PUT',
-                contentType: 'application/json',
-                data: JSON.stringify(updatePayload),
-                success: function() {
-                    alert('Channel added successfully!');
-                    $('#addChannelModal').modal('hide');
-                    $('#addChannelForm')[0].reset();
-                    $('#addChannelModal .btn-primary').text(originalText).prop('disabled', false);
-                    loadChannels();
-                },
-                error: function(xhr) {
-                    alert('Channel added but failed to update settings: ' + (xhr.responseJSON?.detail || 'Unknown error'));
-                    $('#addChannelModal').modal('hide');
-                    $('#addChannelForm')[0].reset();
-                    $('#addChannelModal .btn-primary').text(originalText).prop('disabled', false);
-                    loadChannels();
-                }
-            });
-        },
-        error: function(xhr) {
-            $('#addChannelModal .btn-primary').text(originalText).prop('disabled', false);
-
-            if (xhr.status === 400 && xhr.responseJSON?.detail?.includes('already exists')) {
-                alert('This channel already exists in your database.');
-            } else if (xhr.status === 400) {
-                alert('Could not extract channel ID from URL. Please check the URL or provide the channel ID manually.');
-            } else if (xhr.status === 404) {
-                alert('Channel not found on YouTube. Please check the URL.');
-            } else {
-                alert('Failed to add channel: ' + (xhr.responseJSON?.detail || 'Unknown error'));
-            }
-        }
-    });
 }
 
 function viewChannel(channelId) {
@@ -356,33 +306,13 @@ function deleteChannel(channelId, channelName) {
     });
 }
 
-function loadChannelsForVideoSelect() {
-    $.get('/api/channels?limit=100', function(data) {
-        const select = $('#videoChannelSelect');
-        select.empty();
-        select.append('<option value="">-- Select a channel --</option>');
-
-        data.forEach(function(channel) {
-            select.append(`<option value="${channel.id}">${channel.channel_name}</option>`);
-        });
-    }).fail(function() {
-        console.error('Failed to load channels for video select');
-    });
-}
-
 function addVideo() {
     const videoUrl = $('#videoUrl').val().trim();
-    const channelId = $('#videoChannelSelect').val();
     const autoSummarize = $('#autoSummarize').is(':checked');
 
     // Validate required fields
     if (!videoUrl) {
         alert('Please enter a YouTube video URL');
-        return;
-    }
-
-    if (!channelId) {
-        alert('Please select a channel');
         return;
     }
 
@@ -398,27 +328,33 @@ function addVideo() {
     const originalText = $button.html();
     $button.html('<span class="spinner-border spinner-border-sm me-2"></span>Adding video...').prop('disabled', true);
 
-    // Add video via API
+    // Add video via API — channel is resolved automatically from YouTube
     $.ajax({
         url: '/api/videos/add-single',
         method: 'POST',
         contentType: 'application/json',
+        timeout: 60000,
         data: JSON.stringify({
             video_url: videoUrl,
             video_id: videoId,
-            channel_id: parseInt(channelId),
             auto_summarize: autoSummarize
         }),
         success: function(response) {
-            alert('Video added successfully!');
+            const channelNote = response.channel_created
+                ? ` Its channel "${response.channel_name}" was added automatically and is available for future sessions.`
+                : '';
+            alert(`Video added successfully!${channelNote}`);
             $('#addVideoModal').modal('hide');
             $('#addVideoForm')[0].reset();
             $button.html(originalText).prop('disabled', false);
-            loadChannels(); // Refresh to show updated video count
+            loadChannels(); // Refresh to show updated video count and any newly added channel
         },
-        error: function(xhr) {
+        error: function(xhr, textStatus) {
             $button.html(originalText).prop('disabled', false);
-            if (xhr.status === 400 && xhr.responseJSON?.detail?.includes('already exists')) {
+            if (textStatus === 'timeout') {
+                alert('The request timed out. The video may have been added — refresh the page to check.');
+                loadChannels();
+            } else if (xhr.status === 400 && xhr.responseJSON?.detail?.includes('already exists')) {
                 alert('This video already exists in the database.');
             } else {
                 alert('Failed to add video: ' + (xhr.responseJSON?.detail || 'Unknown error'));

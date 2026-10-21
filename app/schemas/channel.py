@@ -3,10 +3,10 @@ from typing import Optional, List
 from datetime import datetime
 
 
-class ChannelBase(BaseModel):
-    channel_id: str = Field(..., description="User-defined reference ID (e.g., 'tech-channel-1', 'mkbhd')")
+class ChannelCreate(BaseModel):
+    channel_id: Optional[str] = Field(None, description="User-defined reference ID (e.g., 'tech-channel-1', 'mkbhd'). Auto-generated when omitted.")
     youtube_channel_id: Optional[str] = Field(None, description="YouTube channel ID (optional, auto-extracted)")
-    channel_name: str = Field(..., description="Channel name")
+    channel_name: Optional[str] = Field(None, description="Channel name (auto-fetched from YouTube when omitted)")
     channel_url: str = Field(..., description="Full YouTube channel URL")
     description: Optional[str] = None
     keywords: List[str] = Field(default_factory=list, description="Keywords for video filtering")
@@ -14,8 +14,13 @@ class ChannelBase(BaseModel):
     crawl_frequency: str = Field(default="manual", description="daily/weekly/manual")
 
 
-class ChannelCreate(ChannelBase):
-    pass
+class ChannelCreateFromUrl(BaseModel):
+    """Payload for adding a channel by URL only — reference ID and name are assigned automatically."""
+    url: str = Field(..., description="YouTube channel URL (any format)")
+    description: Optional[str] = None
+    keywords: List[str] = Field(default_factory=list, description="Keywords for video filtering")
+    crawl_enabled: bool = True
+    crawl_frequency: str = Field(default="manual", description="daily/weekly/manual")
 
 
 class ChannelUpdate(BaseModel):
@@ -26,7 +31,15 @@ class ChannelUpdate(BaseModel):
     crawl_frequency: Optional[str] = None
 
 
-class ChannelResponse(ChannelBase):
+class ChannelResponse(BaseModel):
+    channel_id: str
+    youtube_channel_id: Optional[str] = None
+    channel_name: str
+    channel_url: str
+    description: Optional[str] = None
+    keywords: List[str] = Field(default_factory=list)
+    crawl_enabled: bool = True
+    crawl_frequency: str = "manual"
     id: int
     last_crawled_at: Optional[datetime] = None
     created_at: datetime

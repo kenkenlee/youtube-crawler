@@ -54,26 +54,16 @@
             <div class="modal-body">
                 <form id="addChannelForm">
                     <div class="mb-3">
-                        <label class="form-label">Reference ID *</label>
-                        <input type="text" class="form-control" id="channelId" placeholder="e.g., tech-channel-1, mkbhd, veritasium" required>
-                        <small class="form-text text-muted">Your own unique identifier for this channel (letters, numbers, hyphens)</small>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Channel Name *</label>
-                        <input type="text" class="form-control" id="channelName" placeholder="e.g., MKBHD, Veritasium" required>
-                        <small class="form-text text-muted">Display name for the channel</small>
-                    </div>
-                    <div class="mb-3">
                         <label class="form-label">YouTube Channel URL *</label>
                         <input type="url" class="form-control" id="channelUrl" placeholder="https://www.youtube.com/@channelname" required>
-                        <small class="form-text text-muted">Any YouTube channel URL format</small>
+                        <small class="form-text text-muted">Any YouTube channel URL format. The reference ID and channel name are assigned automatically.</small>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description (optional)</label>
                         <textarea class="form-control" id="channelDescription" rows="3"></textarea>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Filter Keywords (comma-separated)</label>
+                        <label class="form-label">Filter Keywords (comma-separated, optional)</label>
                         <input type="text" class="form-control" id="channelKeywords" placeholder="AI, machine learning, tutorial">
                         <small class="form-text text-muted">Videos matching these keywords will be prioritized</small>
                     </div>
@@ -161,14 +151,7 @@
                     <div class="mb-3">
                         <label class="form-label">YouTube Video URL *</label>
                         <input type="url" class="form-control" id="videoUrl" placeholder="https://www.youtube.com/watch?v=..." required>
-                        <small class="form-text text-muted">Paste any YouTube video URL</small>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Select Channel *</label>
-                        <select class="form-select" id="videoChannelSelect" required>
-                            <option value="">-- Select a channel --</option>
-                        </select>
-                        <small class="form-text text-muted">The video will be associated with this channel</small>
+                        <small class="form-text text-muted">Paste any YouTube video URL. The video's channel is detected automatically and added to your channels list.</small>
                     </div>
                     <div class="form-check mb-3">
                         <input class="form-check-input" type="checkbox" id="autoSummarize" checked>
@@ -177,7 +160,7 @@
                         </label>
                     </div>
                     <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i> <strong>Note:</strong> The video will be fetched from YouTube and added to your database. Metadata including title, description, views, and likes will be automatically extracted.
+                        <i class="bi bi-info-circle"></i> <strong>Note:</strong> The video will be fetched from YouTube and added to your database. Its channel is resolved automatically — no need to select one — and will be available for future crawl sessions. Metadata including title, description, views, and likes will be extracted.
                     </div>
                 </form>
             </div>
