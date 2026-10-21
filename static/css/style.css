@@ -793,3 +793,70 @@ body.dark-mode .skeleton {
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
+
+/* ===== Feature 8: AI-100 + HKPC logos (navbar top right) ===== */
+.logo-ai100 {
+    display: inline-block;
+    padding: 2px 8px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+    color: #fff;
+    background: linear-gradient(135deg, #6f42c1, #d63384);
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.35);
+}
+
+.logo-hkpc-img {
+    height: 18px;
+    width: auto;
+    vertical-align: middle;
+}
+
+/* ===== Feature 6: mind map rendering ===== */
+.mindmap-tree {
+    overflow-x: auto;
+    padding: 8px;
+}
+.mindmap-node {
+    border-left: 3px solid #0d6efd;
+    margin: 6px 0 6px 10px;
+    padding-left: 12px;
+}
+.mindmap-label {
+    font-weight: 600;
+    color: #0d6efd;
+    margin-bottom: 4px;
+}
+.mindmap-leaf {
+    margin: 3px 0 3px 18px;
+    color: #212529;
+}
+.mindmap-children .mindmap-node .mindmap-label {
+    color: #198754;
+    border-color: #198754;
+}
+
+/* ===== Feature 5: detail summary block ===== */
+.detail-summary-block h5 {
+    color: #0f5132;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    padding-bottom: 4px;
+    margin-top: 12px;
+}
+.detail-summary-block h6 {
+    color: #0f5132;
+    margin-top: 10px;
+}
+
+/* ===== Feature 6 button (purple) ===== */
+.btn-purple {
+    background-color: #6f42c1;
+    border-color: #6f42c1;
+    color: #fff;
+}
+.btn-purple:hover {
+    background-color: #5a32a3;
+    border-color: #5a32a3;
+    color: #fff;
+}

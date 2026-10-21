@@ -24,6 +24,8 @@ class Video(Base):
     transcript_text = Column(Text, nullable=True)
     summary_text = Column(Text, nullable=True)
     summary_generated_at = Column(DateTime, nullable=True)
+    detail_summary = Column(Text, nullable=True)
+    detail_summary_generated_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 

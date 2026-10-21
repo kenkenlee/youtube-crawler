@@ -54,8 +54,8 @@
                 <form id="newSessionForm">
                     <div class="mb-3">
                         <label class="form-label">Session Name</label>
-                        <input type="text" class="form-control" id="sessionName" required>
-                        <small class="form-text text-muted">Give this session a descriptive name</small>
+                        <input type="text" class="form-control" id="sessionName" placeholder="Leave empty to auto-generate">
+                        <small class="form-text text-muted">Optional — if empty, the name is built from selected channels, filter keywords, date and time</small>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Session Type</label>
@@ -66,6 +66,12 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Select Channels</label>
+                        <div class="d-flex justify-content-end mb-1">
+                            <select class="form-select form-select-sm w-auto" id="channelSort" title="Sort channel list">
+                                <option value="name" selected>Sort: Name</option>
+                                <option value="added">Sort: Date added</option>
+                            </select>
+                        </div>
                         <select class="form-select" id="sessionChannels" multiple size="8" required>
                             <!-- Populated dynamically -->
                         </select>

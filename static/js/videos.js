@@ -3,11 +3,14 @@
 let currentPage = 0;
 let currentVideoId = null;
 let currentViewMode = 'list';  // 'list' (detailed) or 'browse' (thumbnail + short info)
+let currentVideos = [];        // last loaded videos (for re-render on row-size change)
 
 function setViewMode(mode) {
     currentViewMode = mode;
     $('#viewListBtn').toggleClass('active', mode === 'list');
     $('#viewBrowseBtn').toggleClass('active', mode === 'browse');
+    // Row-size selector only applies to the browse view
+    $('#browseRowSize').closest('.col-md-1').toggle(mode === 'browse');
     loadVideos();
 }
 
@@ -58,6 +61,18 @@ $(document).ready(function() {
     $('#sortFilter').change(function() {
         loadVideos();
     });
+
+    // When sort direction changes, reload videos
+    $('#orderFilter').change(function() {
+        loadVideos();
+    });
+
+    // Browse view row-size selector: visible only in browse mode
+    $('#browseRowSize').change(function() {
+        if (currentViewMode === 'browse') {
+            displayVideos(currentVideos);
+        }
+    });
 });
 
 function loadVideos(page = 0) {
@@ -67,12 +82,14 @@ function loadVideos(page = 0) {
     const channelId = window.currentChannelFilter || $('#channelFilter').val();
     const hasSummary = $('#summaryFilter').val();
     const sortBy = $('#sortFilter').val() || 'fetched';
+    const order = $('#orderFilter').val() || 'desc';
 
-    let url = `/api/videos?skip=${skip}&limit=${limit}&sort_by=${sortBy}`;
+    let url = `/api/videos?skip=${skip}&limit=${limit}&sort_by=${sortBy}&order=${order}`;
     if (channelId) url += `&channel_id=${channelId}`;
     if (hasSummary) url += `&has_summary=${hasSummary}`;
 
     $.get(url, function(data) {
+        currentVideos = data;
         displayVideos(data);
         currentPage = page;
         updatePagination(data.length, limit, page);
@@ -162,9 +179,11 @@ function displayVideos(videos) {
 }
 
 // Browse view: videos grouped row-by-row per channel, each video showing
-// only thumbnail, title and short info
+// only thumbnail, title and short info. Number of videos per row is
+// configurable (default 5) via the row-size selector.
 function displayBrowseView(videos) {
     const container = $('#videosList');
+    const colsPerRow = parseInt($('#browseRowSize').val() || '5', 10);
 
     // Group videos by channel preserving the current sort order
     const byChannel = new Map();
@@ -195,7 +214,7 @@ function displayBrowseView(videos) {
                 <span class="badge bg-secondary">${group.videos.length} video${group.videos.length !== 1 ? 's' : ''}</span>
             </div>
             <div class="card-body">
-                <div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-3">
+                <div class="row row-cols-1 row-cols-md-${Math.min(colsPerRow, 6)} row-cols-lg-${colsPerRow} g-3">
                     ${group.videos.map(video => createBrowseCard(video)).join('')}
                 </div>
             </div>
@@ -301,9 +320,14 @@ function createVideoCard(video) {
                         <i class="bi bi-file-text"></i> Get Transcript
                     </button>
                     ` : ''}
-                    ${!video.summary_text ? `
-                    <button class="btn btn-sm btn-outline-success" onclick="generateSummary(${video.id})">
-                        <i class="bi bi-magic"></i> Generate Summary
+                    ${video.transcript_text && !video.detail_summary ? `
+                    <button class="btn btn-sm btn-outline-success" onclick="generateDetailSummary(${video.id}, false)">
+                        <i class="bi bi-file-earmark-text"></i> Detail Summary
+                    </button>
+                    ` : ''}
+                    ${video.detail_summary ? `
+                    <button class="btn btn-sm btn-purple" onclick="viewMindMap(${video.id})">
+                        <i class="bi bi-diagram-3"></i> Mind Map
                     </button>
                     ` : ''}
                     <button class="btn btn-sm btn-outline-info" onclick="downloadVideo(${video.id}, '${video.video_id}', '${video.title.replace(/'/g, "\\'")}')">
@@ -349,6 +373,24 @@ function viewVideoDetails(videoId) {
         const keywords = video.matched_keywords && video.matched_keywords.length > 0
             ? video.matched_keywords.map(k => `<span class="badge bg-info me-1">${k}</span>`).join('')
             : '<span class="text-muted">No matched keywords</span>';
+
+        // Feature 4.1 / 5 / 6: action buttons — get transcript, generate detail
+        // summary (only enabled when a transcript exists), mind map (only shown
+        // when a detail summary exists)
+        const hasTranscript = !!video.transcript_text;
+        const hasDetailSummary = !!video.detail_summary;
+        const detailSummaryBtn = hasTranscript
+            ? `<button class="btn btn-sm btn-success" onclick="generateDetailSummary(${video.id}, ${hasDetailSummary})">
+                   <i class="bi bi-file-earmark-text"></i> ${hasDetailSummary ? 'Regenerate Detail Summary' : 'Generate Detail Summary'}
+               </button>`
+            : `<button class="btn btn-sm btn-success" disabled title="Get the transcript first">
+                   <i class="bi bi-file-earmark-text"></i> Generate Detail Summary
+               </button>`;
+        const mindMapBtn = hasDetailSummary
+            ? `<button class="btn btn-sm btn-purple" onclick="viewMindMap(${video.id})">
+                   <i class="bi bi-diagram-3"></i> View Mind Map
+               </button>`
+            : '';
 
         const content = `
             <div class="row">
@@ -407,6 +449,32 @@ function viewVideoDetails(videoId) {
                 </div>
             </div>
             `}
+            ${video.detail_summary ? `
+            <div class="row mt-3">
+                <div class="col-12">
+                    <h6>Detail Summary</h6>
+                    <div class="alert alert-success detail-summary-block" id="detailSummaryBlock">
+                        ${renderMarkdown(video.detail_summary)}
+                    </div>
+                    <small class="text-muted">
+                        Generated: ${video.detail_summary_generated_at ? new Date(video.detail_summary_generated_at).toLocaleString() : 'Unknown'}
+                    </small>
+                </div>
+            </div>
+            ` : ''}
+            <div class="row mt-3">
+                <div class="col-12">
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                        ${!hasTranscript ? `
+                        <button class="btn btn-sm btn-warning" onclick="fetchTranscript(${video.id})">
+                            <i class="bi bi-file-text"></i> Get Transcript
+                        </button>` : ''}
+                        ${detailSummaryBtn}
+                        ${mindMapBtn}
+                    </div>
+                    ${hasTranscript ? '<small class="text-muted d-block mt-1">Transcript downloaded — you can generate a detail summary and a mind map.</small>' : ''}
+                </div>
+            </div>
             ${video.transcript_text ? `
             <div class="row mt-3">
                 <div class="col-12">
@@ -465,6 +533,166 @@ function regenerateSummary() {
     });
 }
 
+// Feature 5: generate a well-structured detail summary from the transcript.
+function generateDetailSummary(videoId, hasExisting) {
+    const msg = hasExisting
+        ? 'Regenerate the detail summary? The existing one will be replaced.'
+        : 'Generate a detail summary from the video transcript?';
+    if (!confirm(msg)) {
+        return;
+    }
+
+    $.ajax({
+        url: `/api/videos/${videoId}/detail-summary${hasExisting ? '?force_regenerate=true' : ''}`,
+        method: 'POST',
+        success: function(response) {
+            alert('Detail summary generated successfully!');
+            // Reload the details modal so the new summary and the mind-map
+            // button appear immediately.
+            viewVideoDetails(videoId);
+        },
+        error: function(xhr) {
+            alert('Failed to generate detail summary: ' + (xhr.responseJSON?.detail || 'Unknown error'));
+        }
+    });
+}
+
+// Feature 6: show the mind map generated from the detail summary.
+function viewMindMap(videoId) {
+    $.ajax({
+        url: `/api/videos/${videoId}/mindmap`,
+        method: 'POST',
+        success: function(response) {
+            showMindMapModal(videoId, response.mind_map);
+        },
+        error: function(xhr) {
+            alert('Failed to generate mind map: ' + (xhr.responseJSON?.detail || 'Unknown error'));
+        }
+    });
+}
+
+function showMindMapModal(videoId, mindMapMarkdown) {
+    // Remove any previous instance
+    $('#mindMapModal').remove();
+
+    const modal = `
+    <div class="modal fade" id="mindMapModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-diagram-3"></i> Mind Map</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="mindMapTree" class="mindmap-container">
+                        ${renderMarkdownTree(mindMapMarkdown)}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>`;
+    $('body').append(modal);
+    $('#mindMapModal').modal('show');
+}
+
+// Minimal markdown renderer for summary blocks (headings, bullets, bold, paragraphs).
+function renderMarkdown(text) {
+    if (!text) return '';
+    let html = '';
+    const lines = text.split('\n');
+    let inList = false;
+    lines.forEach(function(line) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('### ')) {
+            if (inList) { html += '</ul>'; inList = false; }
+            html += `<h6 class="mt-2">${trimmed.slice(4)}</h6>`;
+        } else if (trimmed.startsWith('## ')) {
+            if (inList) { html += '</ul>'; inList = false; }
+            html += `<h5 class="mt-3">${trimmed.slice(3)}</h5>`;
+        } else if (trimmed.startsWith('# ')) {
+            if (inList) { html += '</ul>'; inList = false; }
+            html += `<h4 class="mt-3">${trimmed.slice(2)}</h4>`;
+        } else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+            if (!inList) { html += '<ul>'; inList = true; }
+            html += `<li>${inlineFormat(trimmed.slice(2))}</li>`;
+        } else if (trimmed === '') {
+            if (inList) { html += '</ul>'; inList = false; }
+        } else {
+            if (inList) { html += '</ul>'; inList = false; }
+            html += `<p class="mb-2">${inlineFormat(trimmed)}</p>`;
+        }
+    });
+    if (inList) html += '</ul>';
+    return html;
+}
+
+function inlineFormat(text) {
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*([^*]+)\*/g, '<em>$1</em>');
+}
+
+// Render mind-map markdown as an indented tree view.
+function renderMarkdownTree(text) {
+    if (!text) return '';
+    let html = '<div class="mindmap-tree">';
+    const lines = text.split('\n').filter(l => l.trim() !== '');
+    let root = null;
+    const stack = [];  // stack of {level, node}
+    lines.forEach(function(line) {
+        const indent = line.match(/^\s*/)[0].length;
+        const content = line.trim().replace(/^[-*#]+\s*/, '').replace(/^#+\s*/, '');
+        if (!content) return;
+        const level = line.startsWith('#') ? 0 : Math.floor(indent / 2);
+        const node = { content: content, children: [] };
+        if (root === null) {
+            root = node;
+        } else {
+            while (stack.length > 0 && stack[stack.length - 1].level >= level) {
+                stack.pop();
+            }
+            if (stack.length === 0) {
+                if (root.children) {
+                    // Treat as additional top-level branch — attach to root
+                    root.children.push(node);
+                    stack.push({ level: level, node: node });
+                    return;
+                }
+            }
+            if (stack.length > 0) {
+                stack[stack.length - 1].node.children.push(node);
+            }
+            stack.push({ level: level, node: node });
+        }
+        if (root !== node) {
+            stack.push({ level: level, node: node });
+        }
+    });
+    html += renderMindMapNode(root);
+    html += '</div>';
+    return html;
+}
+
+function renderMindMapNode(node) {
+    if (!node) return '';
+    if (!node.children || node.children.length === 0) {
+        return `<div class="mindmap-leaf">${node.content}</div>`;
+    }
+    return `
+    <div class="mindmap-node">
+        <div class="mindmap-label">${node.content}</div>
+        <div class="mindmap-children">
+            ${node.children.map(renderMindMapNode).join('')}
+        </div>
+    </div>`;
+}
+
 function deleteVideo(videoId) {
     if (!confirm('Are you sure you want to delete this video? This action cannot be undone.')) {
         return;
@@ -508,7 +736,13 @@ function fetchTranscript(videoId) {
         method: 'GET',
         success: function(response) {
             alert('Transcript fetched successfully!');
-            loadVideos(currentPage);
+            // Refresh the details modal if it is open so the detail-summary
+            // button becomes enabled, otherwise just reload the list.
+            if ($('#videoDetailsModal').hasClass('show')) {
+                viewVideoDetails(videoId);
+            } else {
+                loadVideos(currentPage);
+            }
         },
         error: function(xhr) {
             alert('Failed to fetch transcript: ' + (xhr.responseJSON?.detail || 'Unknown error'));
