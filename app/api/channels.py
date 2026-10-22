@@ -32,6 +32,27 @@ def _unique_reference_id(db: Session, base: str) -> str:
     return candidate
 
 
+@router.get("/search/youtube", response_model=List[dict])
+def search_youtube_channels(
+    q: str = Query(..., min_length=2, description="Search keywords"),
+    limit: int = Query(10, ge=1, le=25),
+    db: Session = Depends(get_db)
+):
+    """Search YouTube for channels matching keywords. Flags which ones are already added."""
+    youtube_service = YouTubeService()
+    results = youtube_service.search_channels(q, max_results=limit)
+
+    # Mark channels that are already in the database (by YouTube channel ID)
+    existing_ids = {
+        c.youtube_channel_id for c in db.query(Channel.youtube_channel_id).all()
+        if c.youtube_channel_id
+    }
+    for result in results:
+        result['already_added'] = result['youtube_channel_id'] in existing_ids
+
+    return results
+
+
 @router.post("/", response_model=ChannelResponse, status_code=201)
 def create_channel(channel: ChannelCreate, db: Session = Depends(get_db)):
     """Create a new channel. Reference ID and channel name are auto-assigned when omitted."""

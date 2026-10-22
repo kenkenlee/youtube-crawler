@@ -136,7 +136,7 @@ templates = Jinja2Templates(directory=templates_path)
 @app.get("/")
 async def root():
     from fastapi.responses import RedirectResponse
-    return RedirectResponse(url="/dashboard")
+    return RedirectResponse(url="/videos")
 
 
 # Web interface routes

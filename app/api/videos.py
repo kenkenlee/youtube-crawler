@@ -29,6 +29,32 @@ class AddSingleVideoRequest(BaseModel):
     auto_summarize: bool = False
 
 
+@router.get("/search/youtube")
+def search_youtube_videos(
+    q: str = Query(..., min_length=2, description="Search keywords"),
+    page_token: Optional[str] = Query(None, description="YouTube nextPageToken for the next page"),
+    db: Session = Depends(get_db)
+):
+    """Search YouTube videos by keyword. Max 10 results per page with
+    pagination via YouTube's pageToken. Results are marked already_added
+    when the video is already in the local database."""
+    from app.services.youtube_service import YouTubeService
+    result = YouTubeService().search_videos(q, max_results=10, page_token=page_token)
+    if result.get('error'):
+        raise HTTPException(status_code=502, detail=result['error'])
+
+    added_ids = {v.video_id for v in db.query(Video.video_id).all()}
+    for v in result['videos']:
+        v['already_added'] = v['video_id'] in added_ids
+
+    return {
+        'query': q,
+        'videos': result['videos'],
+        'next_page_token': result['next_page_token'],
+        'total': result['total']
+    }
+
+
 @router.post("/add-single")
 async def add_single_video(
     request: AddSingleVideoRequest,
