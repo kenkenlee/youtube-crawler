@@ -98,7 +98,9 @@ function createChannelCard(channel) {
         'https://www.gstatic.com/youtube/img/branding/youtubelogo/svg/youtubelogo.svg';
 
     return `
-        <div class="channel-card-compact">
+        <div class="channel-card-compact clickable-card"
+             onclick="viewChannel(${channel.id})"
+             title="Click to view this channel's videos">
             <div class="d-flex align-items-center">
                 <img src="${channelIconUrl}"
                      class="channel-icon me-3"
@@ -117,7 +119,7 @@ function createChannelCard(channel) {
                                 </span>
                             </div>
                         </div>
-                        <div class="btn-group btn-group-sm">
+                        <div class="btn-group btn-group-sm" onclick="event.stopPropagation()">
                             <button class="btn btn-sm btn-outline-primary" onclick="viewChannel(${channel.id})" title="View Videos">
                                 <i class="bi bi-collection-play"></i>
                             </button>
@@ -131,7 +133,7 @@ function createChannelCard(channel) {
                     </div>
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="channel-keywords">${keywords}</div>
-                        <div class="d-flex gap-2">
+                        <div class="d-flex gap-2" onclick="event.stopPropagation()">
                             <small class="text-muted">Last: ${lastCrawled}</small>
                             <a href="${channel.channel_url}" target="_blank" class="btn btn-sm btn-outline-secondary" title="View on YouTube">
                                 <i class="bi bi-youtube"></i>
@@ -210,6 +212,88 @@ function addChannel() {
             }
         }
     });
+}
+
+// Escape a string for safe use inside an HTML attribute (single/double quotes).
+function escAttr(s) {
+    return String(s || '')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+// Format a number compactly (e.g. 1234567 -> 1.2M) — local copy since
+// formatNumber lives in videos.js which isn't loaded on this page.
+function formatNumber(num) {
+    if (!num && num !== 0) return '';
+    if (num >= 1e9) return (num / 1e9).toFixed(1).replace(/\.0$/, '') + 'B';
+    if (num >= 1e6) return (num / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
+    if (num >= 1e3) return (num / 1e3).toFixed(1).replace(/\.0$/, '') + 'K';
+    return String(num);
+}
+
+// ---------- Feature 11: search YouTube channels by keyword ----------
+function searchYouTubeChannels() {
+    const query = $('#channelSearchQuery').val().trim();
+    if (query.length < 2) {
+        alert('Please enter at least 2 characters to search.');
+        return;
+    }
+
+    const $results = $('#channelSearchResults');
+    $results.html('<p class="text-muted"><span class="spinner-border spinner-border-sm me-1"></span>Searching YouTube...</p>');
+
+    $.ajax({
+        url: '/api/channels/search/youtube?q=' + encodeURIComponent(query),
+        method: 'GET',
+        timeout: 30000,
+        success: function(results) {
+            if (!results || results.length === 0) {
+                $results.html('<div class="alert alert-warning mb-0">No channels found for this search. Try different keywords.</div>');
+                return;
+            }
+            let html = `<p class="text-muted mb-2">${results.length} channels found — click <strong>Select</strong> to fill the form:</p>
+                <div class="list-group channel-search-list">`;
+            results.forEach(function(ch) {
+                const addedBadge = ch.already_added
+                    ? '<span class="badge bg-secondary ms-2">Already added</span>'
+                    : '<span class="badge bg-success ms-2">New</span>';
+                html += `
+                <div class="list-group-item d-flex align-items-center gap-3">
+                    <img src="${ch.thumbnail}" alt="" class="rounded-circle" style="width:48px;height:48px;object-fit:cover;" onerror="this.style.display='none'">
+                    <div class="flex-grow-1">
+                        <div><strong>${ch.channel_name}</strong>${addedBadge}</div>
+                        <div class="small text-muted">${ch.subscriber_count.toLocaleString()} subscribers · ${ch.video_count.toLocaleString()} videos</div>
+                        <div class="small text-muted text-truncate" style="max-width:420px;">${ch.description || ''}</div>
+                    </div>
+                    <button type="button" class="btn btn-sm ${ch.already_added ? 'btn-outline-secondary' : 'btn-outline-primary'}"
+                            onclick="selectSearchResult('${escAttr(ch.channel_url)}')"
+                            ${ch.already_added ? 'disabled' : ''}>
+                        ${ch.already_added ? 'Added' : 'Select'}
+                    </button>
+                </div>`;
+            });
+            html += '</div>';
+            $results.html(html);
+        },
+        error: function(xhr) {
+            $results.html('<div class="alert alert-danger mb-0">Search failed: ' + (xhr.responseJSON?.detail || xhr.statusText) + '</div>');
+        }
+    });
+}
+
+function selectSearchResult(channelUrl) {
+    // Fill the URL field — the backend resolves the rest from YouTube
+    $('#channelUrl').val(channelUrl);
+    $('#channelDescription').val('');
+    // Scroll to the form so the user can confirm and click Add Channel
+    $('#channelUrl')[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    $('#channelUrl').trigger('focus');
+    // Highlight that the form has been filled from the search result
+    $('#channelUrl').addClass('border-success');
+    setTimeout(function() { $('#channelUrl').removeClass('border-success'); }, 2500);
 }
 
 function extractChannelId(url) {
@@ -304,6 +388,121 @@ function deleteChannel(channelId, channelName) {
             alert('Failed to delete channel: ' + (xhr.responseJSON?.detail || 'Unknown error'));
         }
     });
+}
+
+// ---------- Video search in the Add Single Video modal ----------
+// Max 10 results per page; pagination via YouTube's nextPageToken.
+let videoSearchState = {
+    query: null,
+    pageToken: null,       // token for the NEXT page
+    prevTokens: [],        // stack of tokens for going back
+    pageInfo: null,
+    videos: []
+};
+
+function searchYouTubeVideos(pageToken = null, direction = 0) {
+    const query = $('#videoSearchQuery').val().trim();
+    if (!query || query.length < 2) {
+        alert('Please enter at least 2 characters to search.');
+        return;
+    }
+    if (direction === 0) {
+        // Fresh search — reset state
+        videoSearchState = { query: query, pageToken: null, prevTokens: [], pageInfo: null, videos: [] };
+    }
+
+    const $btn = $('#videoSearchResults');
+    const loadingHtml = '<div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div> Searching...</div>';
+    $btn.removeClass('d-none').html(loadingHtml);
+
+    let url = `/api/videos/search/youtube?q=${encodeURIComponent(query)}`;
+    if (pageToken) url += `&page_token=${encodeURIComponent(pageToken)}`;
+
+    $.ajax({
+        url: url,
+        method: 'GET',
+        timeout: 20000,
+        success: function(response) {
+            videoSearchState.videos = response.videos || [];
+            videoSearchState.pageInfo = response.total;
+
+            // Track tokens for prev/next navigation
+            if (direction === 0) {
+                videoSearchState.prevTokens = [];
+            } else if (direction === 1 && videoSearchState.pageToken) {
+                videoSearchState.prevTokens.push(videoSearchState.pageToken);
+            }
+            videoSearchState.pageToken = response.next_page_token;
+
+            renderVideoSearchResults();
+        },
+        error: function(xhr) {
+            const detail = (xhr.responseJSON && xhr.responseJSON.detail) || 'Search failed. Please try again.';
+            $btn.html(`<div class="alert alert-danger mb-0">${escAttr(detail)}</div>`);
+        }
+    });
+}
+
+function videoSearchPage(direction) {
+    // direction: 1 = next, -1 = prev
+    if (direction === 1) {
+        if (!videoSearchState.pageToken) return;
+        searchYouTubeVideos(videoSearchState.pageToken, 1);
+    } else {
+        if (videoSearchState.prevTokens.length === 0) return;
+        const prevToken = videoSearchState.prevTokens.pop();
+        searchYouTubeVideos(prevToken, -1);
+    }
+}
+
+function renderVideoSearchResults() {
+    const $list = $('#videoSearchResults');
+    const $pag = $('#videoSearchPagination');
+    const videos = videoSearchState.videos;
+
+    if (!videos.length) {
+        $list.html('<div class="alert alert-warning mb-0">No videos found for this query.</div>');
+        $pag.addClass('d-none');
+        return;
+    }
+
+    const items = videos.map(v => {
+        const views = v.view_count ? formatNumber(v.view_count) + ' views' : '';
+        const addedBadge = v.already_added
+            ? '<span class="badge bg-secondary ms-1">Already added</span>' : '';
+        const btn = v.already_added
+            ? ''
+            : `<button type="button" class="btn btn-sm btn-outline-success"
+                       onclick="selectVideoSearchResult('${v.video_id}')">Select</button>`;
+        return `
+            <div class="list-group-item">
+                <div class="d-flex">
+                    <img src="${escAttr(v.thumbnail)}" class="video-search-thumb me-2" alt="">
+                    <div class="flex-grow-1 min-w-0">
+                        <div class="video-search-title">${escAttr(v.title)} ${addedBadge}</div>
+                        <small class="text-muted d-block">${escAttr(v.channel_title)} · ${views} · ${escAttr(v.duration)}</small>
+                        <small class="text-muted d-block text-truncate">${escAttr(v.description)}</small>
+                    </div>
+                    <div class="ms-2">${btn}</div>
+                </div>
+            </div>`;
+    }).join('');
+
+    $list.html(`<div class="list-group">${items}</div>`);
+
+    // Pagination controls
+    const pageNum = videoSearchState.prevTokens.length + 1;
+    $pag.removeClass('d-none');
+    $('#videoSearchPageInfo').text(`Page ${pageNum} · up to 10 results`);
+    $('#videoSearchPrevBtn').prop('disabled', videoSearchState.prevTokens.length === 0);
+    $('#videoSearchNextBtn').prop('disabled', !videoSearchState.pageToken);
+}
+
+function selectVideoSearchResult(videoId) {
+    $('#videoUrl').val(`https://www.youtube.com/watch?v=${videoId}`);
+    $('#videoUrl').addClass('border-success');
+    setTimeout(function() { $('#videoUrl').removeClass('border-success'); }, 2500);
+    // Keep results visible so the user can compare or pick another video
 }
 
 function addVideo() {

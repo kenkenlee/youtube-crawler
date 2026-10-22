@@ -54,6 +54,17 @@
             <div class="modal-body">
                 <form id="addChannelForm">
                     <div class="mb-3">
+                        <label class="form-label">Search YouTube Channels</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="channelSearchQuery" placeholder="Type keywords, e.g. machine learning, cooking, tech news">
+                            <button type="button" class="btn btn-outline-primary" onclick="searchYouTubeChannels()">
+                                <i class="bi bi-search"></i> Search
+                            </button>
+                        </div>
+                        <small class="form-text text-muted">Or paste a channel URL below if you already have one.</small>
+                        <div id="channelSearchResults" class="mt-2"></div>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label">YouTube Channel URL *</label>
                         <input type="url" class="form-control" id="channelUrl" placeholder="https://www.youtube.com/@channelname" required>
                         <small class="form-text text-muted">Any YouTube channel URL format. The reference ID and channel name are assigned automatically.</small>
@@ -148,6 +159,31 @@
             </div>
             <div class="modal-body">
                 <form id="addVideoForm">
+                    <!-- Video search: find videos by keyword, 10 per page -->
+                    <div class="mb-3">
+                        <label class="form-label">Search YouTube Videos</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="videoSearchQuery"
+                                   placeholder="Enter keywords, e.g. AI agents tutorial">
+                            <button type="button" class="btn btn-outline-primary" onclick="searchYouTubeVideos()">
+                                <i class="bi bi-search"></i> Search
+                            </button>
+                        </div>
+                        <div id="videoSearchResults" class="video-search-list mt-2 d-none"></div>
+                        <div id="videoSearchPagination" class="d-flex justify-content-between align-items-center mt-2 d-none">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="videoSearchPrevBtn"
+                                    onclick="videoSearchPage(-1)" disabled>
+                                <i class="bi bi-chevron-left"></i> Prev
+                            </button>
+                            <small class="text-muted" id="videoSearchPageInfo"></small>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="videoSearchNextBtn"
+                                    onclick="videoSearchPage(1)">
+                                <i class="bi bi-chevron-right"></i> Next
+                            </button>
+                        </div>
+                    </div>
+
+                    <hr>
                     <div class="mb-3">
                         <label class="form-label">YouTube Video URL *</label>
                         <input type="url" class="form-control" id="videoUrl" placeholder="https://www.youtube.com/watch?v=..." required>

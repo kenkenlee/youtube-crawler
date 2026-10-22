@@ -866,3 +866,51 @@ body.dark-mode .skeleton {
     padding: 0.15rem 0.5rem;
     font-size: 0.75rem;
 }
+
+/* ===== Feature 11: channel search results in the Add Channel modal ===== */
+.channel-search-list {
+    max-height: 320px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+}
+.channel-search-list .list-group-item {
+    border-left: none;
+    border-right: none;
+}
+
+/* ===== Add-video search results (max 10 per page, paginated) ===== */
+.video-search-list {
+    max-height: 340px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+}
+.video-search-list .list-group-item {
+    border-left: none;
+    border-right: none;
+}
+.video-search-thumb {
+    width: 120px;
+    height: 68px;
+    object-fit: cover;
+    border-radius: 0.25rem;
+    flex-shrink: 0;
+}
+.video-search-title {
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+.min-w-0 {
+    min-width: 0;
+}
+
+/* ===== Clickable channel cards — click blank space opens the videos page ===== */
+.clickable-card {
+    cursor: pointer;
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+.clickable-card:hover {
+    box-shadow: 0 0.25rem 0.75rem rgba(13, 110, 253, 0.15);
+    transform: translateY(-1px);
+}

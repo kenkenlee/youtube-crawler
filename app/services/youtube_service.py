@@ -103,6 +103,125 @@ class YouTubeService:
             logger.error(f"YouTube API error searching for channel '{query}': {e}")
         return None
 
+    def search_channels(self, query: str, max_results: int = 10) -> List[Dict[str, Any]]:
+        """Search for channels by keyword via search.list, then hydrate stats via channels.list.
+
+        search.list costs 100 quota units per call, so we fetch up to 50 results
+        in one search call and enrich them with a single channels.list call
+        (1 unit) for subscriber/video counts and a canonical thumbnail.
+        """
+        try:
+            response = self.youtube.search().list(
+                part='snippet',
+                type='channel',
+                q=query,
+                maxResults=min(50, max_results)
+            ).execute()
+
+            items = response.get('items', [])
+            if not items:
+                return []
+
+            # search.list results lack statistics — hydrate them in one batch call
+            channel_ids = [
+                item['snippet']['channelId'] if 'channelId' in item.get('snippet', {})
+                else item['id'].get('channelId')
+                for item in items
+            ]
+            channel_ids = [cid for cid in channel_ids if cid]
+
+            details = {}
+            if channel_ids:
+                details_response = self.youtube.channels().list(
+                    part='snippet,statistics',
+                    id=','.join(channel_ids)
+                ).execute()
+                for item in details_response.get('items', []):
+                    details[item['id']] = item
+
+            results = []
+            for cid in channel_ids:
+                item = details.get(cid)
+                if not item:
+                    continue
+                snippet = item.get('snippet', {})
+                statistics = item.get('statistics', {})
+                results.append({
+                    'youtube_channel_id': cid,
+                    'channel_name': snippet.get('title', ''),
+                    'description': (snippet.get('description', '') or '')[:200],
+                    'channel_url': f'https://www.youtube.com/channel/{cid}',
+                    'subscriber_count': int(statistics.get('subscriberCount', 0)),
+                    'video_count': int(statistics.get('videoCount', 0)),
+                    'thumbnail': snippet.get('thumbnails', {}).get('default', {}).get('url', ''),
+                    'already_added': False  # filled in by the API layer
+                })
+            return results
+        except HttpError as e:
+            logger.error(f"YouTube API error searching channels for '{query}': {e}")
+            return []
+
+    def search_videos(self, query: str, max_results: int = 10, page_token: str = None) -> Dict[str, Any]:
+        """Search YouTube videos by keyword with pagination support.
+
+        search.list costs 100 quota units per call. Each call returns up to
+        max_results videos plus a nextPageToken for fetching the next page.
+        Results are enriched in a single videos.list call (1 unit) with real
+        view counts, durations and channel names.
+        """
+        try:
+            response = self.youtube.search().list(
+                part='snippet',
+                type='video',
+                q=query,
+                maxResults=min(50, max_results),
+                pageToken=page_token
+            ).execute()
+
+            items = response.get('items', [])
+            if not items:
+                return {'videos': [], 'next_page_token': None, 'total': 0}
+
+            video_ids = [item['id']['videoId'] for item in items if item.get('id', {}).get('videoId')]
+
+            # Enrich with statistics + contentDetails in one batched call
+            details = {}
+            if video_ids:
+                details_response = self.youtube.videos().list(
+                    part='snippet,statistics,contentDetails',
+                    id=','.join(video_ids)
+                ).execute()
+                for item in details_response.get('items', []):
+                    details[item['id']] = item
+
+            videos = []
+            for vid in video_ids:
+                item = details.get(vid)
+                if not item:
+                    continue
+                snippet = item.get('snippet', {})
+                statistics = item.get('statistics', {})
+                videos.append({
+                    'video_id': vid,
+                    'title': snippet.get('title', ''),
+                    'description': (snippet.get('description', '') or '')[:200],
+                    'channel_title': snippet.get('channelTitle', ''),
+                    'published_at': snippet.get('publishedAt', ''),
+                    'thumbnail': snippet.get('thumbnails', {}).get('medium', {}).get('url', ''),
+                    'view_count': int(statistics.get('viewCount', 0)),
+                    'like_count': int(statistics.get('likeCount', 0)),
+                    'duration': self._parse_duration(item.get('contentDetails', {}).get('duration', ''))
+                })
+
+            return {
+                'videos': videos,
+                'next_page_token': response.get('nextPageToken'),
+                'total': int(response.get('pageInfo', {}).get('totalResults', 0))
+            }
+        except HttpError as e:
+            logger.error(f"YouTube API error searching videos for '{query}': {e}")
+            return {'videos': [], 'next_page_token': None, 'total': 0, 'error': str(e)}
+
     def get_channel_info(self, channel_id: str) -> Optional[Dict[str, Any]]:
         """Fetch channel metadata using the YouTube Data API"""
         try:
