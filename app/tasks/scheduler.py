@@ -42,7 +42,18 @@ def recurring_sessions_job():
                 if template.status == 'running':
                     continue
 
-                last_run = template.completed_at or template.started_at or template.created_at
+                # The template itself never runs, so its own timestamps never
+                # change; derive the last run from the newest child instead.
+                latest_child = db.query(CrawlSession).filter(
+                    CrawlSession.parent_session_id == template.id
+                ).order_by(CrawlSession.created_at.desc()).first()
+                if latest_child is not None:
+                    # A run that hasn't finished yet counts as in progress
+                    if latest_child.status in ('pending', 'running'):
+                        continue
+                    last_run = latest_child.created_at or latest_child.started_at or template.created_at
+                else:
+                    last_run = template.completed_at or template.started_at or template.created_at
                 if last_run.tzinfo is not None:
                     last_run = last_run.replace(tzinfo=None)
                 if now - last_run < timedelta(hours=template.recurrence_hours) - timedelta(minutes=1):
