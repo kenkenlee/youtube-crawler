@@ -17,7 +17,13 @@ class Video(Base):
     view_count = Column(BigInteger, default=0)
     like_count = Column(BigInteger, default=0)
     comment_count = Column(BigInteger, default=0)
+    # YouTube keyword tags. JSON array of strings, e.g. ["euv", "chips"].
+    # Empty list when the video has no public tags. Sync clients key the row
+    # by video_id (the YouTube id) and read this field unchanged.
     tags = Column(JSON, default=list)
+    # Set once a tag fetch succeeds (including "this video has no tags").
+    # NULL means tags have not been resolved yet — crawl and backfill will try.
+    tags_checked_at = Column(DateTime, nullable=True)
     matched_keywords = Column(JSON, default=list)  # Keywords that matched this video
     video_url = Column(String(500), nullable=True)
     thumbnail_url = Column(String(500), nullable=True)

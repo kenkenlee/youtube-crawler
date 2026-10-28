@@ -133,6 +133,9 @@ async def add_single_video(
         if not info:
             raise HTTPException(status_code=404, detail="Video not found on YouTube")
 
+    from app.services.video_tags import resolve_tags
+    resolved_tags = resolve_tags(request.video_id, info.get('tags') or [])
+
     try:
         # Create video object
         video = Video(
@@ -145,7 +148,8 @@ async def add_single_video(
             view_count=info.get('view_count', 0),
             like_count=info.get('like_count', 0),
             comment_count=info.get('comment_count', 0),
-            tags=info.get('tags', []),
+            tags=resolved_tags.tags,
+            tags_checked_at=datetime.utcnow() if resolved_tags.ok else None,
             video_url=video_url,
             thumbnail_url=info.get('thumbnail', '')
         )
@@ -460,6 +464,7 @@ async def download_video(video_id: int, db: Session = Depends(get_db)):
         f"Duration: {video.duration or 0} seconds",
         f"Views: {video.view_count or 0}",
         f"Likes: {video.like_count or 0}",
+        f"Tags: {', '.join(video.tags or []) or 'None'}",
         "",
         "=" * 60,
         "DESCRIPTION",

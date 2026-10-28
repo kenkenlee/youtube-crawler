@@ -32,6 +32,7 @@ def _apply_lightweight_migrations():
         "videos": [
             ("video_url", "ALTER TABLE videos ADD COLUMN video_url VARCHAR(500)"),
             ("thumbnail_url", "ALTER TABLE videos ADD COLUMN thumbnail_url VARCHAR(500)"),
+            ("tags_checked_at", "ALTER TABLE videos ADD COLUMN tags_checked_at DATETIME"),
         ],
         "channels": [
             ("thumbnail_url", "ALTER TABLE channels ADD COLUMN thumbnail_url VARCHAR(500)"),

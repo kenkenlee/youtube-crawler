@@ -12,6 +12,7 @@ except ImportError:
     EXCEL_AVAILABLE = False
 
 from app.models.video import Video
+from app.services.video_tags import tags_to_csv
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,10 @@ class ExportService:
             'URL',
             'Has Summary',
             'Summary',
-            'Keywords'
+            'Keywords',
+            # Appended so older positional readers keep the columns above.
+            # One cell, comma-separated. The JSON API field is the `tags` array.
+            'Tags'
         ])
 
         # Write data
@@ -60,9 +64,10 @@ class ExportService:
                 video.like_count or 0,
                 video.comment_count or 0,
                 video.video_url,
-                'Yes' if video.summary else 'No',
-                video.summary or '',
-                ', '.join(video.channel.keywords) if video.channel and video.channel.keywords else ''
+                'Yes' if video.summary_text else 'No',
+                video.summary_text or '',
+                ', '.join(video.channel.keywords) if video.channel and video.channel.keywords else '',
+                tags_to_csv(video.tags)
             ])
 
         return output.getvalue()
@@ -104,7 +109,8 @@ class ExportService:
             'URL',
             'Has Summary',
             'Summary',
-            'Keywords'
+            'Keywords',
+            'Tags'
         ]
 
         for col_num, header in enumerate(headers, 1):
@@ -125,9 +131,10 @@ class ExportService:
             ws.cell(row=row_num, column=7, value=video.like_count or 0)
             ws.cell(row=row_num, column=8, value=video.comment_count or 0)
             ws.cell(row=row_num, column=9, value=video.video_url)
-            ws.cell(row=row_num, column=10, value='Yes' if video.summary else 'No')
-            ws.cell(row=row_num, column=11, value=video.summary or '')
+            ws.cell(row=row_num, column=10, value='Yes' if video.summary_text else 'No')
+            ws.cell(row=row_num, column=11, value=video.summary_text or '')
             ws.cell(row=row_num, column=12, value=', '.join(video.channel.keywords) if video.channel and video.channel.keywords else '')
+            ws.cell(row=row_num, column=13, value=tags_to_csv(video.tags))
 
         # Auto-adjust column widths
         for column in ws.columns:
@@ -162,7 +169,7 @@ class ExportService:
         total_views = sum(v.view_count or 0 for v in videos)
         total_likes = sum(v.like_count or 0 for v in videos)
         total_comments = sum(v.comment_count or 0 for v in videos)
-        videos_with_summary = sum(1 for v in videos if v.summary)
+        videos_with_summary = sum(1 for v in videos if v.summary_text)
 
         # Get channel breakdown
         channel_stats = {}

@@ -217,7 +217,8 @@ def get_channel_videos(
             'published_at': v.published_at,
             'view_count': v.view_count,
             'has_summary': v.summary_text is not None,
-            'matched_keywords': v.matched_keywords
+            'matched_keywords': v.matched_keywords,
+            'tags': v.tags or []
         }
         for v in videos
     ]

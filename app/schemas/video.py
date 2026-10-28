@@ -1,10 +1,10 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List
 from datetime import datetime
 
 
 class VideoBase(BaseModel):
-    video_id: str = Field(..., description="YouTube video ID")
+    video_id: str = Field(..., description="YouTube video ID. Sync clients key videos by this value.")
     title: str
     description: Optional[str] = None
     duration: Optional[int] = None
@@ -12,7 +12,23 @@ class VideoBase(BaseModel):
     view_count: int = 0
     like_count: int = 0
     comment_count: int = 0
-    tags: List[str] = Field(default_factory=list)
+    tags: List[str] = Field(
+        default_factory=list,
+        description=(
+            "YouTube video tags as a JSON array of strings. "
+            "Empty array when the video has no public tags. "
+            "Older clients can ignore this field."
+        ),
+    )
+
+    @field_validator("tags", mode="before")
+    @classmethod
+    def coerce_tags(cls, value):
+        # Rows saved before tags were fetched store NULL. Always emit an array
+        # so list/detail consumers never see a null `tags` field.
+        if value is None:
+            return []
+        return value
 
 
 class VideoCreate(VideoBase):
