@@ -12,7 +12,17 @@ The YouTube Channel Crawler provides a RESTful API built with FastAPI. All endpo
 
 ## Authentication
 
-Currently, the API does not require authentication. This may be added in future versions.
+Most API endpoints are public and do not require authentication.
+
+The **Settings** area is the exception — it is protected by an **admin password**:
+
+- Default password: `HKPC-AI-100`
+- Login page: http://127.0.0.1:5000/settings/login
+- The password can be changed from the Settings page (Security section).
+
+Authentication uses a signed session cookie. Log in once via `POST /settings/login`
+(or the login form) and the session is maintained by the browser / HTTP client.
+All `/api/settings/*` endpoints return `401 Unauthorized` without a valid session.
 
 ## Response Format
 
@@ -379,6 +389,112 @@ GET /api/dashboard/daily-summary
 
 ---
 
+### Settings
+
+> ⚠️ **Requires authentication.** All `/api/settings/*` endpoints return `401` unless
+> you are logged in with a valid admin session (see [Authentication](#authentication)).
+
+#### Get Settings
+```http
+GET /api/settings
+```
+
+Returns the current, resolved settings (DB overrides merged with `.env` defaults).
+
+**Response**:
+```json
+{
+  "youtube_api_key": "AIza...",
+  "llm_provider": "openrouter",
+  "openrouter_api_key": "sk-or-...",
+  "openrouter_base_url": "https://openrouter.ai/api/v1",
+  "openrouter_model": "deepseek/deepseek-chat",
+  "deepseek_api_key": null,
+  "deepseek_base_url": "https://api.deepseek.com",
+  "deepseek_model": "deepseek-chat",
+  "openai_api_key": null,
+  "openai_model": "gpt-4",
+  "auto_fetch_transcript": true,
+  "auto_summarize": true,
+  "max_videos_per_channel": 30,
+  "crawl_delay_seconds": 1
+}
+```
+
+#### Update Settings
+```http
+POST /api/settings
+```
+
+Persists one or more settings. Keys use the uppercase `.env` names; unknown keys
+are rejected with `400`. Changes take effect immediately (on the next crawl /
+service instantiation).
+
+**Request Body** (all fields optional):
+```json
+{
+  "YOUTUBE_API_KEY": "AIza...",
+  "LLM_PROVIDER": "openrouter",
+  "OPENROUTER_API_KEY": "sk-or-...",
+  "OPENROUTER_BASE_URL": "https://openrouter.ai/api/v1",
+  "OPENROUTER_MODEL": "deepseek/deepseek-chat",
+  "DEEPSEEK_API_KEY": null,
+  "DEEPSEEK_BASE_URL": "https://api.deepseek.com",
+  "DEEPSEEK_MODEL": "deepseek-chat",
+  "OPENAI_API_KEY": null,
+  "OPENAI_MODEL": "gpt-4",
+  "AUTO_FETCH_TRANSCRIPT": true,
+  "AUTO_SUMMARIZE": true,
+  "MAX_VIDEOS_PER_CHANNEL": 30,
+  "CRAWL_DELAY_SECONDS": 1
+}
+```
+
+**Key details**:
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `LLM_PROVIDER` | string | `openrouter` / `deepseek` / `openai` — the AI summarisation provider |
+| `AUTO_FETCH_TRANSCRIPT` | boolean | When `false`, transcripts are only fetched on manual request ("Get Transcript"), never automatically |
+| `AUTO_SUMMARIZE` | boolean | Auto-generate summaries during crawling |
+| `MAX_VIDEOS_PER_CHANNEL` | integer | Default per-channel video limit when a session has none set |
+| `CRAWL_DELAY_SECONDS` | integer | Pause between channels while crawling |
+
+**Response**: the updated settings object (same shape as `GET /api/settings`).
+
+#### Change Admin Password
+```http
+POST /api/settings/change-password
+```
+
+**Request Body**:
+```json
+{
+  "current_password": "HKPC-AI-100",
+  "new_password": "NewSecret123"
+}
+```
+
+**Response**:
+```json
+{
+  "message": "Password updated"
+}
+```
+
+---
+
+### Web Pages
+
+| Route | Method | Description |
+|-------|--------|-------------|
+| `/settings` | GET | Settings page (redirects to login if unauthenticated) |
+| `/settings/login` | GET | Admin login form |
+| `/settings/login` | POST | Submit `password` form field; sets the admin session on success |
+| `/settings/logout` | GET | Clears the admin session and returns to login |
+
+---
+
 ### WebSocket
 
 #### Real-time Crawl Updates
@@ -419,6 +535,7 @@ WS /ws/crawl/{session_id}
 | 201 | Created |
 | 204 | No Content |
 | 400 | Bad Request |
+| 401 | Unauthorized (Settings endpoints only) |
 | 404 | Not Found |
 | 422 | Validation Error |
 | 500 | Internal Server Error |
@@ -603,6 +720,11 @@ Upgrade handshake - see the Nginx `location /ws` block in
 ---
 
 ## Changelog
+
+### Version 1.1.0
+- Added password-protected Settings page (`/settings`) and `/api/settings/*` endpoints
+- Added runtime-editable settings (API keys, `AUTO_FETCH_TRANSCRIPT`, `AUTO_SUMMARIZE`, `MAX_VIDEOS_PER_CHANNEL`, `CRAWL_DELAY_SECONDS`)
+- Added admin authentication (default password `HKPC-AI-100`) with change-password support
 
 ### Version 1.0.0 (2024-02-06)
 - Initial API release
