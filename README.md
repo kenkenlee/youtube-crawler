@@ -154,11 +154,36 @@ Access the interactive API documentation at:
 
 ### Key Endpoints
 
-- `GET /api/channels/` - List all channels
+- `GET /api/channels/` - List all channels (includes `category_id` and `category`; filter with `?category_id=`)
 - `POST /api/channels/` - Add new channel
+- `GET /api/categories/` - List categories with `channel_count`
+- `GET /api/categories/{id}/channels` - Channels in a category (`id` is the numeric id or the slug)
 - `GET /api/videos/` - List videos with filters
 - `POST /api/sessions/start` - Start crawl session
 - `POST /api/videos/{id}/summarize` - Generate video summary
+
+## Channel categories
+
+Categories live in the `categories` table (`slug`, `name_zh`, `name_en`, `sort_order`). Each channel stores `category_id`. The slug values (`hk-news`, `tech`, `other`, …) come from `data/channel_catalog_seed.json`.
+
+On startup the app upserts those categories and assigns channels that are already in the database. It does not insert new channels and it does not delete channels or videos.
+
+To run the same backfill yourself, including inside Docker against the SQLite file:
+
+```bash
+python scripts/seed_channel_categories.py
+docker compose exec youtube-crawler python scripts/seed_channel_categories.py
+```
+
+The script is safe to re-run. Existing channels are matched to catalog search names by YouTube channel id, channel URL, or a clear name alias (MKBHD / Marques Brownlee, HOY / 有線新聞, memehongkong / 謎米香港, SCMP, 明報, RTHK, TVB News, and the other groups in `app/services/channel_catalog.py`). A match only sets the category. BBC News and BBC News 中文 stay separate.
+
+Catalog rows are inserted only when the seed file already has a verified `youtube_channel_id` (`resolved_by` of `youtube_data_api`, `yt-dlp`, or `manual`). Lookups keep a channel when the title clearly matches (including any HK / 香港 token), it has at least 1,000 subscribers, and a short name is echoed by the handle or description. To look ids up and then import the ones that pass:
+
+```bash
+python scripts/seed_channel_categories.py --resolve
+```
+
+`--dry-run` prints the report and rolls the database back. Newly imported channels are `crawl_enabled=false` unless you pass `--enable-crawl`. Channels that were already stored keep their `crawl_enabled` flag.
 
 ## 📁 Project Structure
 

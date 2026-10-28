@@ -2,6 +2,8 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 
+from app.schemas.category import CategorySummary
+
 
 class ChannelCreate(BaseModel):
     channel_id: Optional[str] = Field(None, description="User-defined reference ID (e.g., 'tech-channel-1', 'mkbhd'). Auto-generated when omitted.")
@@ -12,6 +14,10 @@ class ChannelCreate(BaseModel):
     keywords: List[str] = Field(default_factory=list, description="Keywords for video filtering")
     crawl_enabled: bool = True
     crawl_frequency: str = Field(default="manual", description="daily/weekly/manual")
+    category_id: Optional[str] = Field(
+        None,
+        description="Category numeric id or slug (for example 'hk-news'). Omitted leaves the channel uncategorized.",
+    )
 
 
 class ChannelCreateFromUrl(BaseModel):
@@ -21,6 +27,10 @@ class ChannelCreateFromUrl(BaseModel):
     keywords: List[str] = Field(default_factory=list, description="Keywords for video filtering")
     crawl_enabled: bool = True
     crawl_frequency: str = Field(default="manual", description="daily/weekly/manual")
+    category_id: Optional[str] = Field(
+        None,
+        description="Category numeric id or slug (for example 'hk-news'). Omitted leaves the channel uncategorized.",
+    )
 
 
 class ChannelUpdate(BaseModel):
@@ -29,6 +39,10 @@ class ChannelUpdate(BaseModel):
     keywords: Optional[List[str]] = None
     crawl_enabled: Optional[bool] = None
     crawl_frequency: Optional[str] = None
+    category_id: Optional[str] = Field(
+        None,
+        description="Category numeric id or slug. Null clears the category.",
+    )
 
 
 class ChannelResponse(BaseModel):
@@ -43,6 +57,8 @@ class ChannelResponse(BaseModel):
     crawl_frequency: str = "manual"
     thumbnail_url: Optional[str] = None
     id: int
+    category_id: Optional[int] = None
+    category: Optional[CategorySummary] = None
     last_crawled_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime

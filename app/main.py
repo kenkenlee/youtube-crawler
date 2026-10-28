@@ -9,7 +9,7 @@ import os
 
 from app.config import settings
 from app.database import engine, Base, SessionLocal
-from app.models import Channel, Video, CrawlSession, SessionVideo, AppSetting
+from app.models import Category, Channel, Video, CrawlSession, SessionVideo, AppSetting
 from app.services.admin_auth import verify_password, is_authenticated
 
 
@@ -17,6 +17,7 @@ from app.services.admin_auth import verify_password, is_authenticated
 def init_db():
     Base.metadata.create_all(bind=engine)
     _apply_lightweight_migrations()
+    _seed_channel_categories()
 
 
 def _apply_lightweight_migrations():
@@ -35,6 +36,7 @@ def _apply_lightweight_migrations():
         ],
         "channels": [
             ("thumbnail_url", "ALTER TABLE channels ADD COLUMN thumbnail_url VARCHAR(500)"),
+            ("category_id", "ALTER TABLE channels ADD COLUMN category_id INTEGER"),
         ],
         "crawl_sessions": [
             ("max_videos", "ALTER TABLE crawl_sessions ADD COLUMN max_videos INTEGER DEFAULT 5"),
@@ -86,6 +88,32 @@ def _apply_lightweight_migrations():
                     print(f"Backfilled logo for channel '{ch.channel_name}'")
     except Exception as e:
         print(f"Channel logo backfill skipped: {e}")
+
+
+def _seed_channel_categories():
+    """Upsert catalog categories and categorize channels that are already stored.
+
+    New catalog channels are not inserted here. Run
+    ``python scripts/seed_channel_categories.py`` to import rows that have a
+    verified YouTube channel id. Skipped under pytest so tests stay on the
+    fixture database.
+    """
+    import os
+    if os.environ.get("PYTEST_CURRENT_TEST"):
+        return
+    try:
+        from app.services.channel_catalog import apply_catalog, ensure_category_schema
+        ensure_category_schema(engine)
+        with SessionLocal() as db:
+            report = apply_catalog(db, import_resolved=False)
+            db.commit()
+        print(
+            "Channel categories ready: "
+            f"{report['categories_upserted']} categories, "
+            f"{len(report['assignments'])} existing channels categorized"
+        )
+    except Exception as e:
+        print(f"Channel category seed skipped: {e}")
 
 
 @asynccontextmanager
@@ -214,8 +242,9 @@ async def health_check():
 
 
 # Import and include routers
-from app.api import channels, videos, sessions, dashboard, websocket, settings as settings_api
+from app.api import categories, channels, videos, sessions, dashboard, websocket, settings as settings_api
 
+app.include_router(categories.router, prefix="/api/categories", tags=["categories"])
 app.include_router(channels.router, prefix="/api/channels", tags=["channels"])
 app.include_router(videos.router, prefix="/api/videos", tags=["videos"])
 app.include_router(sessions.router, prefix="/api/sessions", tags=["sessions"])

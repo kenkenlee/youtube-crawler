@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, JSON
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, JSON, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -17,11 +17,13 @@ class Channel(Base):
     keywords = Column(JSON, default=list)  # List of keywords for filtering
     crawl_enabled = Column(Boolean, default=True)
     crawl_frequency = Column(String(50), default="manual")  # daily/weekly/manual
+    category_id = Column(Integer, ForeignKey("categories.id"), nullable=True, index=True)
     last_crawled_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     # Relationships
+    category = relationship("Category", back_populates="channels")
     videos = relationship("Video", back_populates="channel", cascade="all, delete-orphan")
 
     def __repr__(self):

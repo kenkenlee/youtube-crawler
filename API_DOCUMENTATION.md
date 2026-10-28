@@ -52,7 +52,9 @@ GET /api/channels/
 
 **Query Parameters**:
 - `skip` (integer, optional): Number of records to skip (default: 0)
-- `limit` (integer, optional): Maximum records to return (default: 100)
+- `limit` (integer, optional): Maximum records to return (default: 50, max 500)
+- `crawl_enabled` (boolean, optional): Filter by crawl flag
+- `category_id` (string, optional): Category numeric id or slug (for example `tech` or `12`)
 
 **Response**:
 ```json
@@ -67,12 +69,45 @@ GET /api/channels/
     "keywords": ["tech", "review", "smartphone"],
     "crawl_enabled": true,
     "crawl_frequency": "manual",
+    "category_id": 12,
+    "category": {
+      "id": 12,
+      "slug": "tech",
+      "name_zh": "果籽・科技",
+      "name_en": "Lifestyle—Technology"
+    },
     "last_crawled_at": "2024-02-06T10:30:00",
     "created_at": "2024-02-01T08:00:00",
-    "updated_at": "2024-02-06T10:30:00"
+    "updated_at": "2024-02-06T10:30:00",
+    "video_count": 10,
+    "summarized_count": 4
   }
 ]
 ```
+
+### Categories
+
+#### List categories
+```http
+GET /api/categories/
+```
+
+Returns every category in catalog order with `channel_count`.
+
+#### Channels in a category
+```http
+GET /api/categories/{id}/channels
+```
+
+`id` is the numeric primary key or the slug (`hk-news`, `tech`, `other`, …).
+
+Seed categories and assign existing channels without duplicating them:
+
+```bash
+python scripts/seed_channel_categories.py
+```
+
+See the Channel categories section in the README. New catalog channels are imported only when `data/channel_catalog_seed.json` has a verified YouTube channel id.
 
 #### Get Channel by ID
 ```http
