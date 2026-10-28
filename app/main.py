@@ -1,13 +1,16 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 from contextlib import asynccontextmanager
 import os
 
 from app.config import settings
 from app.database import engine, Base, SessionLocal
-from app.models import Channel, Video, CrawlSession, SessionVideo
+from app.models import Channel, Video, CrawlSession, SessionVideo, AppSetting
+from app.services.admin_auth import verify_password, is_authenticated
 
 
 # Create database tables
@@ -123,6 +126,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Session middleware (signed cookies) for admin authentication
+app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
+
 # Mount static files
 static_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
 app.mount("/static", StaticFiles(directory=static_path), name="static")
@@ -135,7 +141,6 @@ templates = Jinja2Templates(directory=templates_path)
 # Root endpoint - redirect to dashboard
 @app.get("/")
 async def root():
-    from fastapi.responses import RedirectResponse
     return RedirectResponse(url="/videos")
 
 
@@ -160,6 +165,38 @@ async def videos_page(request: Request):
     return templates.TemplateResponse("videos.html", {"request": request})
 
 
+@app.get("/settings")
+async def settings_page(request: Request):
+    if not is_authenticated(request):
+        return RedirectResponse(url="/settings/login", status_code=303)
+    return templates.TemplateResponse("settings.html", {"request": request})
+
+
+@app.get("/settings/login")
+async def settings_login_page(request: Request):
+    if is_authenticated(request):
+        return RedirectResponse(url="/settings", status_code=303)
+    return templates.TemplateResponse("login.html", {"request": request, "error": None})
+
+
+@app.post("/settings/login")
+async def settings_login(request: Request, password: str = Form(...)):
+    if verify_password(password):
+        request.session["admin_authenticated"] = True
+        return RedirectResponse(url="/settings", status_code=303)
+    return templates.TemplateResponse(
+        "login.html",
+        {"request": request, "error": "Incorrect admin password."},
+        status_code=401,
+    )
+
+
+@app.get("/settings/logout")
+async def settings_logout(request: Request):
+    request.session.clear()
+    return RedirectResponse(url="/settings/login", status_code=303)
+
+
 # API info endpoint
 @app.get("/api")
 async def api_info():
@@ -177,10 +214,11 @@ async def health_check():
 
 
 # Import and include routers
-from app.api import channels, videos, sessions, dashboard, websocket
+from app.api import channels, videos, sessions, dashboard, websocket, settings as settings_api
 
 app.include_router(channels.router, prefix="/api/channels", tags=["channels"])
 app.include_router(videos.router, prefix="/api/videos", tags=["videos"])
 app.include_router(sessions.router, prefix="/api/sessions", tags=["sessions"])
 app.include_router(dashboard.router, prefix="/api/dashboard", tags=["dashboard"])
 app.include_router(websocket.router, prefix="/ws", tags=["websocket"])
+app.include_router(settings_api.router, prefix="/api/settings", tags=["settings"])

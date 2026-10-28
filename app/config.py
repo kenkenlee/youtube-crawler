@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     OPENAI_MODEL: str = "gpt-4"
     OPENAI_MAX_TOKENS: int = 1000
 
+    # LLM provider selection ("openrouter" / "deepseek" / "openai"). Empty means
+    # auto-detect from the legacy USE_* flags below.
+    LLM_PROVIDER: str = ""
+
     # DeepSeek API (alternative to OpenAI)
     DEEPSEEK_API_KEY: Optional[str] = None
     DEEPSEEK_BASE_URL: str = "https://api.deepseek.com"
@@ -39,6 +43,10 @@ class Settings(BaseSettings):
     # Summarization
     AUTO_SUMMARIZE: bool = True
     SUMMARY_STYLE: str = "concise"
+
+    # Transcript fetching — when disabled, transcripts are only fetched when the
+    # user explicitly requests one (the "Get Transcript" action), never automatically.
+    AUTO_FETCH_TRANSCRIPT: bool = True
 
     # Scheduler
     ENABLE_SCHEDULER: bool = True

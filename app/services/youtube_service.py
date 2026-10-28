@@ -6,6 +6,7 @@ import logging
 import re
 
 from app.config import settings
+from app.services.settings_service import SettingsService
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +15,7 @@ class YouTubeService:
     """YouTube Data API v3 only. No scraping fallbacks."""
 
     def __init__(self):
-        self.api_key = settings.YOUTUBE_API_KEY
+        self.api_key = SettingsService.get("YOUTUBE_API_KEY", settings.YOUTUBE_API_KEY)
         self.youtube = None
         if self.api_key:
             try:

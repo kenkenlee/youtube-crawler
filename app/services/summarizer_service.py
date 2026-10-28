@@ -4,6 +4,7 @@ import requests
 import json
 
 from app.config import settings
+from app.services.settings_service import SettingsService
 
 logger = logging.getLogger(__name__)
 
@@ -17,25 +18,39 @@ class SummarizerService:
         self.api_key = None
         self.base_url = None
 
-        # Priority: OpenRouter > DeepSeek > OpenAI
-        if settings.USE_OPENROUTER and settings.OPENROUTER_API_KEY:
+        provider = SettingsService.get("LLM_PROVIDER") or self._default_provider()
+
+        openrouter_key = SettingsService.get("OPENROUTER_API_KEY", settings.OPENROUTER_API_KEY)
+        deepseek_key = SettingsService.get("DEEPSEEK_API_KEY", settings.DEEPSEEK_API_KEY)
+        openai_key = SettingsService.get("OPENAI_API_KEY", settings.OPENAI_API_KEY)
+
+        if provider == "openrouter":
             self.use_openrouter = True
-            self.api_key = settings.OPENROUTER_API_KEY
-            self.base_url = settings.OPENROUTER_BASE_URL
-            self.model = settings.OPENROUTER_MODEL
+            self.api_key = openrouter_key
+            self.base_url = SettingsService.get("OPENROUTER_BASE_URL", settings.OPENROUTER_BASE_URL) or settings.OPENROUTER_BASE_URL
+            self.model = SettingsService.get("OPENROUTER_MODEL", settings.OPENROUTER_MODEL) or settings.OPENROUTER_MODEL
             logger.info(f"Using OpenRouter with model: {self.model}")
-        elif settings.USE_DEEPSEEK and settings.DEEPSEEK_API_KEY:
+        elif provider == "deepseek":
             self.use_deepseek = True
-            self.api_key = settings.DEEPSEEK_API_KEY
-            self.base_url = settings.DEEPSEEK_BASE_URL
-            self.model = settings.DEEPSEEK_MODEL
+            self.api_key = deepseek_key
+            self.base_url = SettingsService.get("DEEPSEEK_BASE_URL", settings.DEEPSEEK_BASE_URL) or settings.DEEPSEEK_BASE_URL
+            self.model = SettingsService.get("DEEPSEEK_MODEL", settings.DEEPSEEK_MODEL) or settings.DEEPSEEK_MODEL
             logger.info("Using DeepSeek API")
-        elif settings.OPENAI_API_KEY:
+        else:  # openai (default fallback)
             self.use_openai = True
-            self.api_key = settings.OPENAI_API_KEY
+            self.api_key = openai_key
             self.base_url = "https://api.openai.com/v1"
-            self.model = settings.OPENAI_MODEL
+            self.model = SettingsService.get("OPENAI_MODEL", settings.OPENAI_MODEL) or settings.OPENAI_MODEL
             logger.info("Using OpenAI API")
+
+    @staticmethod
+    def _default_provider() -> str:
+        """Derive the provider from legacy .env flags when none is stored."""
+        if settings.USE_OPENROUTER and settings.OPENROUTER_API_KEY:
+            return "openrouter"
+        if settings.USE_DEEPSEEK and settings.DEEPSEEK_API_KEY:
+            return "deepseek"
+        return "openai"
 
     def _make_request(self, prompt: str, max_tokens: int = 1000) -> Optional[str]:
         """Make direct HTTP request to the configured API"""
