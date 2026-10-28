@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - YouTube Crawler{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1>Settings</h1>
+                <p class="text-muted mb-0">Configure API keys and general application behaviour. Changes take effect immediately.</p>
+            </div>
+            <div>
+                <a class="btn btn-outline-secondary" href="/settings/logout" title="Log out">
+                    <i class="bi bi-box-arrow-right"></i> Log out
+                </a>
+                <button class="btn btn-primary" id="saveSettingsBtn" onclick="saveSettings()">
+                    <i class="bi bi-check-lg"></i> Save Settings
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- API Keys -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-key"></i> API Keys</h5>
+            </div>
+            <div class="card-body">
+
+                <!-- YouTube API Key -->
+                <div class="mb-4">
+                    <label class="form-label fw-semibold" for="youtubeApiKey">
+                        YouTube Data API Key
+                    </label>
+                    <div class="input-group">
+                        <input type="password" class="form-control" id="youtubeApiKey" placeholder="Paste your YouTube Data API v3 key" autocomplete="off">
+                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('youtubeApiKey', this)">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                    <div class="form-text">
+                        Required for crawling channels and videos. Stored locally in the database.
+                        <a class="text-decoration-none" data-bs-toggle="collapse" href="#youtubeApiHelp" role="button">
+                            How to get a YouTube API key <i class="bi bi-chevron-down small"></i>
+                        </a>
+                    </div>
+
+                    <!-- YouTube API key instructions -->
+                    <div class="collapse mt-3" id="youtubeApiHelp">
+                        <div class="alert alert-info mb-0">
+                            <h6 class="alert-heading"><i class="bi bi-info-circle"></i> Getting a YouTube Data API v3 key</h6>
+                            <ol class="mb-1 small">
+                                <li>Go to the <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a>.</li>
+                                <li>Create a new project (or select an existing one) from the project dropdown at the top.</li>
+                                <li>Open <strong>APIs &amp; Services &rarr; Library</strong>, search for <strong>"YouTube Data API v3"</strong>, and click <strong>Enable</strong>.</li>
+                                <li>Go to <strong>APIs &amp; Services &rarr; Credentials</strong>, click <strong>Create Credentials &rarr; API key</strong>.</li>
+                                <li>Copy the generated key and paste it into the field above.</li>
+                            </ol>
+                            <p class="mb-0 small text-muted">
+                                <strong>Tip:</strong> for security, restrict the key to the "YouTube Data API v3" and (optionally) your IP address.
+                                The free quota is 10,000 units per day.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LLM / AI provider -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">LLM / AI Provider</label>
+                    <p class="form-text mt-0">Used for generating video summaries, detail summaries and mind maps.</p>
+
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="llmProvider" id="providerOpenRouter" value="openrouter">
+                                <label class="form-check-label" for="providerOpenRouter">OpenRouter <span class="badge bg-success">Recommended</span></label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="llmProvider" id="providerDeepSeek" value="deepseek">
+                                <label class="form-check-label" for="providerDeepSeek">DeepSeek</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="llmProvider" id="providerOpenAI" value="openai">
+                                <label class="form-check-label" for="providerOpenAI">OpenAI</label>
+                            </div>
+                        </div>
+
+                        <div class="col-md-9">
+                            <!-- OpenRouter -->
+                            <div id="openrouterFields" class="provider-fields d-none">
+                                <div class="mb-2">
+                                    <label class="form-label small mb-0" for="openrouterApiKey">OpenRouter API Key</label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="password" class="form-control" id="openrouterApiKey" placeholder="sk-or-..." autocomplete="off">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('openrouterApiKey', this)"><i class="bi bi-eye"></i></button>
+                                    </div>
+                                </div>
+                                <div class="row g-2">
+                                    <div class="col-md-6">
+                                        <label class="form-label small mb-0" for="openrouterModel">Model</label>
+                                        <input type="text" class="form-control form-control-sm" id="openrouterModel">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small mb-0" for="openrouterBaseUrl">Base URL</label>
+                                        <input type="text" class="form-control form-control-sm" id="openrouterBaseUrl">
+                                    </div>
+                                </div>
+                                <div class="form-text small mt-1">Get a key at <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a>.</div>
+                            </div>
+
+                            <!-- DeepSeek -->
+                            <div id="deepseekFields" class="provider-fields d-none">
+                                <div class="mb-2">
+                                    <label class="form-label small mb-0" for="deepseekApiKey">DeepSeek API Key</label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="password" class="form-control" id="deepseekApiKey" placeholder="sk-..." autocomplete="off">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('deepseekApiKey', this)"><i class="bi bi-eye"></i></button>
+                                    </div>
+                                </div>
+                                <div class="row g-2">
+                                    <div class="col-md-6">
+                                        <label class="form-label small mb-0" for="deepseekModel">Model</label>
+                                        <input type="text" class="form-control form-control-sm" id="deepseekModel">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small mb-0" for="deepseekBaseUrl">Base URL</label>
+                                        <input type="text" class="form-control form-control-sm" id="deepseekBaseUrl">
+                                    </div>
+                                </div>
+                                <div class="form-text small mt-1">Get a key at <a href="https://platform.deepseek.com/" target="_blank">platform.deepseek.com</a>.</div>
+                            </div>
+
+                            <!-- OpenAI -->
+                            <div id="openaiFields" class="provider-fields d-none">
+                                <div class="mb-2">
+                                    <label class="form-label small mb-0" for="openaiApiKey">OpenAI API Key</label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="password" class="form-control" id="openaiApiKey" placeholder="sk-..." autocomplete="off">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('openaiApiKey', this)"><i class="bi bi-eye"></i></button>
+                                    </div>
+                                </div>
+                                <div class="row g-2">
+                                    <div class="col-md-6">
+                                        <label class="form-label small mb-0" for="openaiModel">Model</label>
+                                        <input type="text" class="form-control form-control-sm" id="openaiModel">
+                                    </div>
+                                </div>
+                                <div class="form-text small mt-1">Get a key at <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a>.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- General Options -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-sliders"></i> General Options</h5>
+            </div>
+            <div class="card-body">
+
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="autoFetchTranscript">
+                    <label class="form-check-label" for="autoFetchTranscript">
+                        <strong>Automatically fetch transcripts</strong>
+                    </label>
+                    <div class="form-text">
+                        When enabled, transcripts are downloaded automatically during crawling and summarisation.
+                        When disabled, transcripts are only fetched when you click <strong>Get Transcript</strong> on a video.
+                    </div>
+                </div>
+
+                <div class="form-check form-switch mb-4">
+                    <input class="form-check-input" type="checkbox" id="autoSummarize">
+                    <label class="form-check-label" for="autoSummarize">
+                        <strong>Automatically generate summaries</strong>
+                    </label>
+                    <div class="form-text">
+                        When enabled, newly crawled videos are summarised using the configured LLM provider.
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label" for="maxVideosPerChannel">Max videos per channel</label>
+                        <input type="number" class="form-control" id="maxVideosPerChannel" min="1" max="1000">
+                        <div class="form-text">Default limit used when a crawl session has no specific limit set.</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="crawlDelaySeconds">Crawl delay (seconds)</label>
+                        <input type="number" class="form-control" id="crawlDelaySeconds" min="0" max="3600">
+                        <div class="form-text">Pause between channels while crawling to avoid rate limiting.</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Security -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-shield-lock"></i> Security</h5>
+            </div>
+            <div class="card-body">
+                <label class="form-label fw-semibold">Change admin password</label>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <input type="password" class="form-control" id="currentPassword" placeholder="Current password" autocomplete="off">
+                    </div>
+                    <div class="col-md-4">
+                        <input type="password" class="form-control" id="newPassword" placeholder="New password (min 4 characters)" autocomplete="off">
+                    </div>
+                    <div class="col-md-4">
+                        <input type="password" class="form-control" id="confirmPassword" placeholder="Confirm new password" autocomplete="off">
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <button type="button" class="btn btn-outline-danger" id="changePasswordBtn" onclick="changePassword()">
+                        <i class="bi bi-key"></i> Change Password
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Save status toast -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="settingsToast" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body" id="settingsToastBody">Settings saved</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/settings.js"></script>
+{% endblock %}

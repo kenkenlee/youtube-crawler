@@ -12,6 +12,7 @@ from app.services.youtube_service import YouTubeService
 from app.services.filter_service import FilterService
 from app.services.transcript_service import TranscriptService
 from app.services.summarizer_service import SummarizerService
+from app.services.settings_service import SettingsService
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -60,7 +61,7 @@ class CrawlerService:
                     self.db.commit()
 
                     # Delay between channels
-                    await asyncio.sleep(settings.CRAWL_DELAY_SECONDS)
+                    await asyncio.sleep(SettingsService.get("CRAWL_DELAY_SECONDS", settings.CRAWL_DELAY_SECONDS))
 
                 except Exception as e:
                     logger.error(f"Error crawling channel {channel.channel_name}: {e}")
@@ -112,7 +113,9 @@ class CrawlerService:
             return 0
 
         # Get videos from channel — per-session limit (default 5), falls back to config
-        per_session_limit = session.max_videos if session.max_videos else settings.MAX_VIDEOS_PER_CHANNEL
+        per_session_limit = session.max_videos if session.max_videos else SettingsService.get(
+            "MAX_VIDEOS_PER_CHANNEL", settings.MAX_VIDEOS_PER_CHANNEL
+        )
         videos = self.youtube_service.list_channel_videos(
             youtube_id,
             max_results=per_session_limit
@@ -233,8 +236,8 @@ class CrawlerService:
         self.db.add(session_video)
         self.db.commit()
 
-        # Always extract transcript if not already present
-        if not video.transcript_text:
+        # Extract transcript automatically (unless globally disabled via Settings).
+        if SettingsService.get("AUTO_FETCH_TRANSCRIPT", settings.AUTO_FETCH_TRANSCRIPT) and not video.transcript_text:
             try:
                 transcript = self.transcript_service.get_transcript(
                     video.video_id,
@@ -250,7 +253,7 @@ class CrawlerService:
                 logger.error(f"Error extracting transcript for video {video_id}: {e}")
 
         # Extract transcript and generate summary if auto-summarize is enabled
-        if settings.AUTO_SUMMARIZE and not video.summary_text:
+        if SettingsService.get("AUTO_SUMMARIZE", settings.AUTO_SUMMARIZE) and not video.summary_text:
             try:
                 await self.summarize_video(video, session)
             except Exception as e:
@@ -274,8 +277,8 @@ class CrawlerService:
         if video.id:
             video = self.db.query(Video).filter(Video.id == video.id).first() or video
 
-        # Extract transcript if not already present
-        if not video.transcript_text:
+        # Extract transcript if not already present (unless globally disabled)
+        if SettingsService.get("AUTO_FETCH_TRANSCRIPT", settings.AUTO_FETCH_TRANSCRIPT) and not video.transcript_text:
             transcript = self.transcript_service.get_transcript(video.video_id)
             if transcript:
                 video.transcript_text = transcript
