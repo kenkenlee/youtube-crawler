@@ -305,45 +305,72 @@ class YouTubeService:
         return videos
 
     def get_video_details(self, video_id: str) -> Optional[Dict[str, Any]]:
-        """Get detailed information about a specific video via the Data API"""
-        try:
-            response = self.youtube.videos().list(
-                part='snippet,statistics,contentDetails',
-                id=video_id
-            ).execute()
+        """Get detailed information about a specific video via the Data API.
 
-            if response.get('items'):
-                item = response['items'][0]
-                snippet = item.get('snippet', {})
-                statistics = item.get('statistics', {})
-                content_details = item.get('contentDetails', {})
+        ``tags`` is ``snippet.tags``. YouTube only returns that list for videos
+        the API credential owns; other videos come back with an empty list.
+        """
+        return self.get_videos_details([video_id]).get(video_id)
 
-                # Parse ISO 8601 duration
-                duration = self._parse_duration(content_details.get('duration', 'PT0S'))
+    def get_videos_details(self, video_ids: List[str]) -> Dict[str, Dict[str, Any]]:
+        """Fetch snippet, statistics and contentDetails for many videos.
 
-                # Parse published date
-                published_at = snippet.get('publishedAt', '')
-                if published_at:
-                    published_at = datetime.fromisoformat(published_at.replace('Z', '+00:00'))
+        ``videos.list`` accepts up to 50 ids per call and costs 1 quota unit
+        either way, so callers should batch. Returns a map keyed by YouTube
+        video id. Ids the API omits are absent from the map.
+        """
+        details: Dict[str, Dict[str, Any]] = {}
+        ids = [vid for vid in video_ids if vid]
+        for start in range(0, len(ids), 50):
+            chunk = ids[start:start + 50]
+            try:
+                response = self.youtube.videos().list(
+                    part='snippet,statistics,contentDetails',
+                    id=','.join(chunk)
+                ).execute()
+            except HttpError as e:
+                logger.error(f"YouTube API error for videos {chunk[:3]}: {e}")
+                continue
+            for item in response.get('items', []):
+                parsed = self._parse_video_item(item)
+                if parsed:
+                    details[parsed['video_id']] = parsed
+        return details
 
-                return {
-                    'video_id': video_id,
-                    'title': snippet.get('title', ''),
-                    'description': snippet.get('description', ''),
-                    'channel_id': snippet.get('channelId', ''),
-                    'channel_title': snippet.get('channelTitle', ''),
-                    'duration': duration,
-                    'published_at': published_at,
-                    'view_count': int(statistics.get('viewCount', 0)),
-                    'like_count': int(statistics.get('likeCount', 0)),
-                    'comment_count': int(statistics.get('commentCount', 0)),
-                    'tags': snippet.get('tags', []),
-                    'thumbnail': snippet.get('thumbnails', {}).get('medium', {}).get('url', '')
-                }
-        except HttpError as e:
-            logger.error(f"YouTube API error for video {video_id}: {e}")
+    def _parse_video_item(self, item: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        video_id = item.get('id')
+        if not video_id or not isinstance(video_id, str):
+            return None
 
-        return None
+        snippet = item.get('snippet', {}) or {}
+        statistics = item.get('statistics', {}) or {}
+        content_details = item.get('contentDetails', {}) or {}
+
+        duration = self._parse_duration(content_details.get('duration', 'PT0S'))
+
+        published_at = snippet.get('publishedAt', '')
+        if published_at:
+            try:
+                published_at = datetime.fromisoformat(published_at.replace('Z', '+00:00'))
+            except ValueError:
+                published_at = None
+        else:
+            published_at = None
+
+        return {
+            'video_id': video_id,
+            'title': snippet.get('title', ''),
+            'description': snippet.get('description', ''),
+            'channel_id': snippet.get('channelId', ''),
+            'channel_title': snippet.get('channelTitle', ''),
+            'duration': duration,
+            'published_at': published_at,
+            'view_count': int(statistics.get('viewCount') or 0),
+            'like_count': int(statistics.get('likeCount') or 0),
+            'comment_count': int(statistics.get('commentCount') or 0),
+            'tags': snippet.get('tags', []) or [],
+            'thumbnail': snippet.get('thumbnails', {}).get('medium', {}).get('url', '')
+        }
 
     def _parse_duration(self, duration_str: str) -> int:
         """Parse ISO 8601 duration to seconds"""

@@ -130,6 +130,31 @@ DELETE /api/channels/{channel_id}
 
 ### Videos
 
+#### Video tags (sync contract)
+
+YouTube keyword tags are stored on `videos.tags` and returned as a JSON array of strings named `tags`. List and detail responses always include the field. An empty array means the video has no public tags. Clients that do not know about tags can ignore the field.
+
+Videos are keyed by `video_id` (the YouTube id, for example `dQw4w9WgXcQ`), not the integer `id`.
+
+```json
+{
+  "id": 1,
+  "video_id": "dQw4w9WgXcQ",
+  "title": "Amazing Tech Review",
+  "tags": ["tech", "review", "smartphone"]
+}
+```
+
+CSV (`GET /api/videos/export/csv`) and Excel (`GET /api/videos/export/excel`) append a `Tags` column. The cell is comma-separated (`tech, review, smartphone`). Columns that already existed stay in the same positions.
+
+The YouTube Data API only returns `snippet.tags` for videos owned by the API credential. For every other video the crawler reads public tags with yt-dlp and stores them in the same `tags` array. A recurring crawl fills tags for videos it visits that have never been checked. For the rest of the catalog:
+
+```bash
+python backfill_video_tags.py
+```
+
+`python fix_missing_tags.py` and `python fix_missing_tags_ytdlp.py` call that same command.
+
 #### List Videos
 ```http
 GET /api/videos/

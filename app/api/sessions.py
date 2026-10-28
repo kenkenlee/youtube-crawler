@@ -191,6 +191,7 @@ def get_session_videos(session_id: int, db: Session = Depends(get_db)):
             'channel_name': video.channel.channel_name,
             'processing_status': sv.processing_status,
             'has_summary': video.summary_text is not None,
+            'tags': video.tags or [],
             'error_message': sv.error_message
         })
 

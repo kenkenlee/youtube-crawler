@@ -13,6 +13,7 @@ from app.services.filter_service import FilterService
 from app.services.transcript_service import TranscriptService
 from app.services.summarizer_service import SummarizerService
 from app.services.settings_service import SettingsService
+from app.services.video_tags import resolve_tags, tags_missing
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -135,11 +136,32 @@ class CrawlerService:
         session.total_videos_found += len(videos)
         self.db.commit()
 
+        # playlistItems does not include tags. Batch videos.list for new rows
+        # and for rows whose tags have never been resolved. One call covers
+        # up to 50 ids (1 quota unit) instead of one call per video.
+        candidate_ids = [v.get('video_id') for v in videos if v.get('video_id')]
+        existing_by_yt = {}
+        if candidate_ids:
+            existing_by_yt = {
+                row.video_id: row
+                for row in self.db.query(Video).filter(Video.video_id.in_(candidate_ids)).all()
+            }
+        need_detail_ids = []
+        for vid in candidate_ids:
+            row = existing_by_yt.get(vid)
+            if row is None or (tags_missing(row.tags) and row.tags_checked_at is None):
+                need_detail_ids.append(vid)
+        details_by_id = (
+            self.youtube_service.get_videos_details(need_detail_ids) if need_detail_ids else {}
+        )
+
         # Process each video
         processed_count = 0
         for video_info in videos:
             try:
-                await self.process_video(video_info, channel, session)
+                await self.process_video(
+                    video_info, channel, session, details_by_id=details_by_id
+                )
                 processed_count += 1
                 session.videos_processed += 1
                 self.db.commit()
@@ -155,7 +177,13 @@ class CrawlerService:
 
         return processed_count
 
-    async def process_video(self, video_info: Dict[str, Any], channel: Channel, session: CrawlSession):
+    async def process_video(
+        self,
+        video_info: Dict[str, Any],
+        channel: Channel,
+        session: CrawlSession,
+        details_by_id: Optional[Dict[str, Dict[str, Any]]] = None,
+    ):
         """
         Process a single video: save to DB, extract transcript, generate summary
 
@@ -163,6 +191,8 @@ class CrawlerService:
             video_info: Video information dictionary
             channel: Channel object
             session: Current crawl session
+            details_by_id: Optional videos.list payload keyed by YouTube id.
+                When provided, this method does not call the API again.
         """
         video_id = video_info.get('video_id')
         if not video_id:
@@ -172,13 +202,18 @@ class CrawlerService:
         existing_video = self.db.query(Video).filter(Video.video_id == video_id).first()
 
         if existing_video:
-            # Update existing video
+            # Update existing video. Metadata stays put; tags are filled once
+            # if a previous crawl stored an empty list from the owner-only API.
             video = existing_video
             logger.info(f"Updating existing video: {video.title}")
+            self._fill_missing_tags(video, video_info, details_by_id)
         else:
             # Use basic info from list_channel_videos (more reliable without API key)
             # Fallback to get_video_details only if needed
-            detailed_info = self.youtube_service.get_video_details(video_id)
+            if details_by_id is not None:
+                detailed_info = details_by_id.get(video_id)
+            else:
+                detailed_info = self.youtube_service.get_video_details(video_id)
             
             if detailed_info:
                 title = detailed_info.get('title', video_info.get('title', ''))
@@ -188,7 +223,7 @@ class CrawlerService:
                 view_count = detailed_info.get('view_count', video_info.get('view_count', 0))
                 like_count = detailed_info.get('like_count', video_info.get('like_count', 0))
                 comment_count = detailed_info.get('comment_count', video_info.get('comment_count', 0))
-                tags = detailed_info.get('tags', video_info.get('tags', []))
+                api_tags = detailed_info.get('tags', video_info.get('tags', []))
             else:
                 # Use whatever info we have from the list
                 title = video_info.get('title', '')
@@ -198,11 +233,13 @@ class CrawlerService:
                 view_count = video_info.get('view_count', 0)
                 like_count = video_info.get('like_count', 0)
                 comment_count = video_info.get('comment_count', 0)
-                tags = video_info.get('tags', [])
+                api_tags = video_info.get('tags', [])
             
             if not title:
                 logger.warning(f"No title for video {video_id}, skipping")
                 return
+
+            resolved = resolve_tags(video_id, api_tags)
 
             # FORCE SAVE: Always try to save even with minimal data
             logger.info(f"Force-saving video {video_id}: {title[:50]}...")
@@ -218,7 +255,8 @@ class CrawlerService:
                 view_count=view_count,
                 like_count=like_count,
                 comment_count=comment_count,
-                tags=tags,
+                tags=resolved.tags,
+                tags_checked_at=datetime.utcnow() if resolved.ok else None,
                 matched_keywords=video_info.get('matched_keywords', [])
             )
             self.db.add(video)
@@ -261,6 +299,48 @@ class CrawlerService:
                 session_video.processing_status = "failed"
                 session_video.error_message = str(e)
                 self.db.commit()
+
+    def _fill_missing_tags(
+        self,
+        video: Video,
+        video_info: Dict[str, Any],
+        details_by_id: Optional[Dict[str, Dict[str, Any]]] = None,
+    ) -> None:
+        """Store tags on a video that was saved before public tags were fetched.
+
+        Rows that already have tags, or that were checked and have none, are
+        left alone so a recurring crawl does not call yt-dlp on every run.
+        """
+        if not tags_missing(video.tags):
+            if video.tags_checked_at is None:
+                video.tags_checked_at = datetime.utcnow()
+                self.db.commit()
+            return
+        if video.tags_checked_at is not None:
+            return
+
+        api_tags = video_info.get('tags') if video_info else None
+        if details_by_id is not None:
+            detailed = details_by_id.get(video.video_id)
+            if detailed is not None:
+                api_tags = detailed.get('tags')
+        else:
+            detailed = self.youtube_service.get_video_details(video.video_id)
+            if detailed is not None:
+                api_tags = detailed.get('tags')
+
+        resolved = resolve_tags(video.video_id, api_tags)
+        if not resolved.ok:
+            logger.warning(
+                f"Tag fetch failed for {video.video_id}; will retry on a later crawl or backfill"
+            )
+            return
+
+        video.tags = resolved.tags
+        video.tags_checked_at = datetime.utcnow()
+        self.db.commit()
+        if resolved.tags:
+            logger.info(f"Stored {len(resolved.tags)} tags for {video.video_id} via {resolved.source}")
 
     async def summarize_video(self, video: Video, session: CrawlSession = None):
         """
