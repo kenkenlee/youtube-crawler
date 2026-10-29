@@ -7,6 +7,7 @@ $(document).ready(function() {
     });
 
     loadSettings();
+    loadYoutubeQuotaStats();
 });
 
 function showProviderFields(provider) {
@@ -139,4 +140,77 @@ function showToast(message, success) {
     $toast.removeClass('text-bg-success text-bg-danger').addClass(success ? 'text-bg-success' : 'text-bg-danger');
     const toast = new bootstrap.Toast($toast[0], { delay: 3000 });
     toast.show();
+}
+
+
+function loadYoutubeQuotaStats() {
+    $.get('/api/settings/youtube-quota', function(s) {
+        const used = s.units_used ?? 0;
+        const limit = s.quota_limit ?? 10000;
+        const remaining = s.units_remaining_estimate ?? Math.max(0, limit - used);
+        const pct = s.percent_used ?? 0;
+        const crawl = s.crawl || {};
+
+        $('#ytUnitsUsed').text(used.toLocaleString());
+        $('#ytUnitsLimit').text('of ' + limit.toLocaleString() + ' · ' + pct + '%');
+        $('#ytUnitsRemaining').text(remaining.toLocaleString());
+        const $bar = $('#ytQuotaBar');
+        $bar.css('width', Math.min(100, pct) + '%');
+        $bar.removeClass('bg-success bg-warning bg-danger');
+        if (pct >= 90) $bar.addClass('bg-danger');
+        else if (pct >= 70) $bar.addClass('bg-warning');
+        else $bar.addClass('bg-success');
+
+        $('#ytChannelsCrawled').text((crawl.channels_crawled_today ?? 0).toLocaleString());
+        $('#ytChannelsTotal').text('total in DB: ' + (crawl.channels_total ?? 0).toLocaleString());
+        $('#ytVideosFetched').text((crawl.videos_found_today ?? 0).toLocaleString());
+        $('#ytVideosNew').text(
+            'new today: ' + (crawl.videos_new_today ?? 0).toLocaleString() +
+            ' · DB total: ' + (crawl.videos_total ?? 0).toLocaleString()
+        );
+
+        if (s.quota_timezone_note) {
+            $('#ytQuotaNote').text(s.quota_timezone_note);
+        }
+        $('#ytQuotaMeta').text(
+            'Quota day ' + (s.quota_day || '—') + ' (' + (s.quota_timezone || 'PT') + ')' +
+            (s.quota_resets_at ? ' · resets ' + s.quota_resets_at : '') +
+            ' · total calls ' + (s.total_calls ?? 0)
+        );
+
+        const methods = s.by_method || [];
+        if (!methods.length) {
+            $('#ytMethodBody').html('<tr><td colspan="4" class="text-muted">No API calls recorded yet today.</td></tr>');
+        } else {
+            $('#ytMethodBody').html(methods.map(function(m) {
+                return '<tr>' +
+                    '<td><code>' + m.method + '</code></td>' +
+                    '<td class="text-end">' + (m.call_count || 0).toLocaleString() + '</td>' +
+                    '<td class="text-end">' + (m.units || 0).toLocaleString() + '</td>' +
+                    '<td class="text-end">' + (m.unit_cost || '—') + '</td>' +
+                    '</tr>';
+            }).join(''));
+        }
+
+        const sessions = s.recent_sessions || [];
+        if (!sessions.length) {
+            $('#ytSessionBody').html('<tr><td colspan="4" class="text-muted">No sessions created on this quota day yet.</td></tr>');
+        } else {
+            $('#ytSessionBody').html(sessions.map(function(sess) {
+                const name = (sess.session_name || ('#' + sess.id)).replace(/</g, '&lt;');
+                const ch = (sess.processed_channels || 0) + '/' + (sess.total_channels || 0);
+                const vids = sess.total_videos_found || 0;
+                return '<tr>' +
+                    '<td title="#' + sess.id + '">' + name + '</td>' +
+                    '<td><span class="badge text-bg-secondary">' + (sess.status || '') + '</span></td>' +
+                    '<td class="text-end">' + ch + '</td>' +
+                    '<td class="text-end">' + vids + '</td>' +
+                    '</tr>';
+            }).join(''));
+        }
+    }).fail(function(xhr) {
+        if (xhr.status === 401) { redirectToLogin(); return; }
+        $('#ytMethodBody').html('<tr><td colspan="4" class="text-danger">Failed to load API stats</td></tr>');
+        $('#ytSessionBody').html('<tr><td colspan="4" class="text-danger">Failed to load sessions</td></tr>');
+    });
 }

@@ -90,3 +90,12 @@ def change_password(body: ChangePasswordRequest):
 
     set_password(new_password)
     return {"message": "Password updated"}
+
+
+@router.get("/youtube-quota")
+def youtube_quota_stats():
+    """Today's estimated YouTube Data API usage (PT quota day) and crawl fetch stats."""
+    from app.services.youtube_quota_service import get_today_summary
+
+    return get_today_summary()
+

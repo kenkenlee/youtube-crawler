@@ -7,6 +7,7 @@ import re
 
 from app.config import settings
 from app.services.settings_service import SettingsService
+from app.services.youtube_quota_service import record_api_call
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +28,19 @@ class YouTubeService:
                 "YOUTUBE_API_KEY is not configured. Crawling uses the YouTube Data API "
                 "exclusively — set YOUTUBE_API_KEY in .env and restart the server."
             )
+
+
+    def _yt_execute(self, method: str, request):
+        """Execute a YouTube API request and record estimated quota units."""
+        try:
+            return request.execute()
+        finally:
+            # Count the attempt even if it fails (failed calls still consume quota
+            # for most Data API methods once accepted by Google).
+            try:
+                record_api_call(method)
+            except Exception:
+                pass
 
     def extract_channel_id(self, url: str) -> Optional[str]:
         """Extract channel ID from various YouTube URL formats using the Data API"""
@@ -61,10 +75,10 @@ class YouTubeService:
     def _resolve_handle(self, handle: str) -> Optional[str]:
         """Resolve an @handle to a channel ID via channels.list(forHandle=...)"""
         try:
-            response = self.youtube.channels().list(
+            response = self._yt_execute('channels.list', self.youtube.channels().list(
                 part='id',
                 forHandle=handle
-            ).execute()
+            ))
             items = response.get('items', [])
             if items:
                 return items[0]['id']
@@ -76,10 +90,10 @@ class YouTubeService:
     def _resolve_username(self, username: str) -> Optional[str]:
         """Resolve a legacy /user/ name to a channel ID via channels.list(forUsername=...)"""
         try:
-            response = self.youtube.channels().list(
+            response = self._yt_execute('channels.list', self.youtube.channels().list(
                 part='id',
                 forUsername=username
-            ).execute()
+            ))
             items = response.get('items', [])
             if items:
                 return items[0]['id']
@@ -90,12 +104,12 @@ class YouTubeService:
     def _search_channel(self, query: str) -> Optional[str]:
         """Find a channel ID via search (costs 100 quota units — used sparingly)"""
         try:
-            response = self.youtube.search().list(
+            response = self._yt_execute('search.list', self.youtube.search().list(
                 part='snippet',
                 type='channel',
                 q=query,
                 maxResults=1
-            ).execute()
+            ))
             items = response.get('items', [])
             if items:
                 return items[0]['snippet']['channelId'] if 'channelId' in items[0]['snippet'] \
@@ -112,12 +126,12 @@ class YouTubeService:
         (1 unit) for subscriber/video counts and a canonical thumbnail.
         """
         try:
-            response = self.youtube.search().list(
+            response = self._yt_execute('search.list', self.youtube.search().list(
                 part='snippet',
                 type='channel',
                 q=query,
                 maxResults=min(50, max_results)
-            ).execute()
+            ))
 
             items = response.get('items', [])
             if not items:
@@ -133,10 +147,10 @@ class YouTubeService:
 
             details = {}
             if channel_ids:
-                details_response = self.youtube.channels().list(
+                details_response = self._yt_execute('channels.list', self.youtube.channels().list(
                     part='snippet,statistics',
                     id=','.join(channel_ids)
-                ).execute()
+                ))
                 for item in details_response.get('items', []):
                     details[item['id']] = item
 
@@ -171,13 +185,13 @@ class YouTubeService:
         view counts, durations and channel names.
         """
         try:
-            response = self.youtube.search().list(
+            response = self._yt_execute('search.list', self.youtube.search().list(
                 part='snippet',
                 type='video',
                 q=query,
                 maxResults=min(50, max_results),
                 pageToken=page_token
-            ).execute()
+            ))
 
             items = response.get('items', [])
             if not items:
@@ -188,10 +202,10 @@ class YouTubeService:
             # Enrich with statistics + contentDetails in one batched call
             details = {}
             if video_ids:
-                details_response = self.youtube.videos().list(
+                details_response = self._yt_execute('videos.list', self.youtube.videos().list(
                     part='snippet,statistics,contentDetails',
                     id=','.join(video_ids)
-                ).execute()
+                ))
                 for item in details_response.get('items', []):
                     details[item['id']] = item
 
@@ -226,10 +240,10 @@ class YouTubeService:
     def get_channel_info(self, channel_id: str) -> Optional[Dict[str, Any]]:
         """Fetch channel metadata using the YouTube Data API"""
         try:
-            response = self.youtube.channels().list(
+            response = self._yt_execute('channels.list', self.youtube.channels().list(
                 part='snippet,statistics',
                 id=channel_id
-            ).execute()
+            ))
 
             if response.get('items'):
                 item = response['items'][0]
@@ -255,10 +269,10 @@ class YouTubeService:
         videos = []
 
         try:
-            response = self.youtube.channels().list(
+            response = self._yt_execute('channels.list', self.youtube.channels().list(
                 part='contentDetails',
                 id=channel_id
-            ).execute()
+            ))
 
             items = response.get('items', [])
             if not items:
@@ -278,7 +292,7 @@ class YouTubeService:
                     maxResults=min(50, max_results - len(videos)),
                     pageToken=next_page_token
                 )
-                playlist_response = playlist_request.execute()
+                playlist_response = self._yt_execute('playlistItems.list', playlist_request)
 
                 for item in playlist_response.get('items', []):
                     video_id = item['contentDetails']['videoId']
@@ -307,10 +321,10 @@ class YouTubeService:
     def get_video_details(self, video_id: str) -> Optional[Dict[str, Any]]:
         """Get detailed information about a specific video via the Data API"""
         try:
-            response = self.youtube.videos().list(
+            response = self._yt_execute('videos.list', self.youtube.videos().list(
                 part='snippet,statistics,contentDetails',
                 id=video_id
-            ).execute()
+            ))
 
             if response.get('items'):
                 item = response['items'][0]

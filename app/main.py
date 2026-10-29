@@ -9,7 +9,7 @@ import os
 
 from app.config import settings
 from app.database import engine, Base, SessionLocal
-from app.models import Category, Channel, Video, CrawlSession, SessionVideo, AppSetting
+from app.models import Category, Channel, Video, CrawlSession, SessionVideo, AppSetting, YouTubeApiUsageDaily
 from app.services.admin_auth import verify_password, is_authenticated
 
 
