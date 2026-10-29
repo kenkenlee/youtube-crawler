@@ -1,22 +1,29 @@
+﻿import os
+
 from fastapi import HTTPException, Request
 
 from app.services.settings_service import SettingsService
 
-# Default admin password. Stored in the settings DB once changed, so it can be
-# rotated from the Settings page without editing code or .env.
-DEFAULT_ADMIN_PASSWORD = "CHANGE_ME_SET_ADMIN_PASSWORD"
-
+# No hardcoded production password. Set ADMIN_PASSWORD in the environment for
+# first login (or change it from the Settings page after authenticating).
+# Historical default was removed from the public tree for security.
 _SESSION_KEY = "admin_authenticated"
 
 
 def get_password() -> str:
-    """Return the current admin password (DB override or the default)."""
-    return SettingsService.get("ADMIN_PASSWORD") or DEFAULT_ADMIN_PASSWORD
+    """Return the current admin password (DB override or ADMIN_PASSWORD env)."""
+    stored = SettingsService.get("ADMIN_PASSWORD")
+    if stored:
+        return stored
+    return os.environ.get("ADMIN_PASSWORD", "").strip()
 
 
 def verify_password(candidate: str) -> bool:
     """Return True if ``candidate`` matches the current admin password."""
-    return bool(candidate) and candidate == get_password()
+    expected = get_password()
+    if not expected:
+        return False
+    return bool(candidate) and candidate == expected
 
 
 def set_password(new_password: str) -> None:
