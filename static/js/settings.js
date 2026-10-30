@@ -208,9 +208,80 @@ function loadYoutubeQuotaStats() {
                     '</tr>';
             }).join(''));
         }
+
+        renderYoutubeQuotaAlert(s);
+        renderYoutubeApiErrors(s);
     }).fail(function(xhr) {
         if (xhr.status === 401) { redirectToLogin(); return; }
         $('#ytMethodBody').html('<tr><td colspan="4" class="text-danger">Failed to load API stats</td></tr>');
         $('#ytSessionBody').html('<tr><td colspan="4" class="text-danger">Failed to load sessions</td></tr>');
+        $('#ytErrorBody').html('<tr><td colspan="5" class="text-danger">Failed to load error summary</td></tr>');
+        const $alert = $('#ytQuotaAlert');
+        $alert.removeClass('d-none alert-danger alert-warning alert-success')
+            .addClass('alert alert-danger')
+            .html('<strong>Failed to load YouTube API usage stats.</strong>');
     });
+}
+
+function escapeHtml(str) {
+    return String(str == null ? '' : str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function renderYoutubeQuotaAlert(s) {
+    const $alert = $('#ytQuotaAlert');
+    const alert = s.alert;
+    if (!alert) {
+        $alert.addClass('d-none').removeClass('alert alert-danger alert-warning').empty();
+        return;
+    }
+    const level = alert.level === 'danger' ? 'danger' : 'warning';
+    const icon = level === 'danger' ? 'bi-exclamation-triangle-fill' : 'bi-exclamation-circle-fill';
+    $alert
+        .removeClass('d-none alert-danger alert-warning')
+        .addClass('alert alert-' + level + ' mb-3')
+        .html(
+            '<div class="d-flex align-items-start gap-2">' +
+            '<i class="bi ' + icon + ' fs-5"></i>' +
+            '<div>' +
+            '<strong>' + escapeHtml(alert.title || 'Quota alert') + '</strong>' +
+            '<div class="small mt-1">' + escapeHtml(alert.message || '') + '</div>' +
+            '</div></div>'
+        );
+}
+
+function renderYoutubeApiErrors(s) {
+    const errors = s.errors || [];
+    const total = s.error_total ?? errors.reduce(function(acc, e) { return acc + (e.error_count || 0); }, 0);
+    const $badge = $('#ytErrorTotalBadge');
+    $badge.text(total.toLocaleString() + ' error' + (total === 1 ? '' : 's'));
+    $badge.removeClass('text-bg-secondary text-bg-danger text-bg-warning');
+    if (s.quota_exceeded || (s.quota_error_count || 0) > 0) $badge.addClass('text-bg-danger');
+    else if (total > 0) $badge.addClass('text-bg-warning');
+    else $badge.addClass('text-bg-secondary');
+
+    if (!errors.length) {
+        $('#ytErrorBody').html('<tr><td colspan="5" class="text-muted">No API errors recorded for this quota day.</td></tr>');
+        return;
+    }
+    $('#ytErrorBody').html(errors.map(function(e) {
+        const reason = escapeHtml(e.reason || 'unknown');
+        const method = escapeHtml(e.method || '');
+        const status = e.http_status != null ? e.http_status : '—';
+        const msg = escapeHtml(e.last_message || '');
+        const rowClass = e.is_quota_exceeded ? 'table-danger' : '';
+        const reasonBadge = e.is_quota_exceeded
+            ? '<span class="badge text-bg-danger">' + reason + '</span>'
+            : '<code>' + reason + '</code>';
+        return '<tr class="' + rowClass + '">' +
+            '<td>' + reasonBadge + '</td>' +
+            '<td><code>' + method + '</code></td>' +
+            '<td class="text-end">' + status + '</td>' +
+            '<td class="text-end">' + (e.error_count || 0).toLocaleString() + '</td>' +
+            '<td class="small text-muted" style="max-width:28rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="' + msg + '">' + msg + '</td>' +
+            '</tr>';
+    }).join(''));
 }

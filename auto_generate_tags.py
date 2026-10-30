@@ -91,11 +91,11 @@ db = SessionLocal()
 try:
     # Find videos with empty tags
     videos_without_tags = db.query(Video).filter(
-        (Video.tags == None) | (Video.tags == '[]')
+        (Video.ai_categories == None) | (Video.ai_categories == []) | (Video.ai_categories == '[]')
     ).all()
     
-    print(f'Found {len(videos_without_tags)} videos without tags')
-    print('Auto-generating tags from content...')
+    print(f'Found {len(videos_without_tags)} videos without AI categories')
+    print('Auto-generating AI category tags from content...')
     print()
     
     updated_count = 0
@@ -108,7 +108,8 @@ try:
             generated_tags = generate_tags_for_video(video)
             
             if generated_tags:
-                video.tags = generated_tags
+                # Keep YouTube description tags intact; store content tags as AI categories
+                video.ai_categories = generated_tags
                 updated_count += 1
                 print(f'  [OK] Generated {len(generated_tags)} tags: {generated_tags[:5]}...')
             else:

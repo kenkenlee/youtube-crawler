@@ -9,7 +9,7 @@ import os
 
 from app.config import settings
 from app.database import engine, Base, SessionLocal
-from app.models import Category, Channel, Video, CrawlSession, SessionVideo, AppSetting, YouTubeApiUsageDaily
+from app.models import Category, Channel, Video, CrawlSession, SessionVideo, AppSetting, YouTubeApiUsageDaily, YouTubeApiErrorDaily
 from app.services.admin_auth import verify_password, is_authenticated
 
 
@@ -33,6 +33,7 @@ def _apply_lightweight_migrations():
         "videos": [
             ("video_url", "ALTER TABLE videos ADD COLUMN video_url VARCHAR(500)"),
             ("thumbnail_url", "ALTER TABLE videos ADD COLUMN thumbnail_url VARCHAR(500)"),
+            ("ai_categories", "ALTER TABLE videos ADD COLUMN ai_categories JSON"),
         ],
         "channels": [
             ("thumbnail_url", "ALTER TABLE channels ADD COLUMN thumbnail_url VARCHAR(500)"),
@@ -103,7 +104,9 @@ def _seed_channel_categories():
         return
     try:
         from app.services.channel_catalog import apply_catalog, ensure_category_schema
+        from app.services.category_assign import ensure_m2m_schema
         ensure_category_schema(engine)
+        ensure_m2m_schema(engine)
         with SessionLocal() as db:
             report = apply_catalog(db, import_resolved=False)
             db.commit()
@@ -223,6 +226,19 @@ async def settings_login(request: Request, password: str = Form(...)):
 async def settings_logout(request: Request):
     request.session.clear()
     return RedirectResponse(url="/settings/login", status_code=303)
+
+
+@app.get("/categories")
+async def categories_page(request: Request):
+    """Categories / Channel management (stats + CRUD + multi-assign). Admin only."""
+    if not is_authenticated(request):
+        return RedirectResponse("/settings/login", status_code=303)
+    return templates.TemplateResponse("categories.html", {"request": request})
+
+
+@app.get("/settings/stats")
+async def settings_stats_redirect():
+    return RedirectResponse("/categories", status_code=303)
 
 
 # API info endpoint

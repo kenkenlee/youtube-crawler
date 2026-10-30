@@ -1,6 +1,21 @@
-from pydantic import BaseModel, Field
-from typing import Optional, List
+from pydantic import BaseModel, Field, field_validator
+from typing import Optional, List, Any
 from datetime import datetime
+
+
+def _list_or_empty(v: Any) -> list:
+    if v is None:
+        return []
+    if isinstance(v, str):
+        import json
+        try:
+            parsed = json.loads(v)
+            return parsed if isinstance(parsed, list) else []
+        except Exception:
+            return []
+    if isinstance(v, list):
+        return v
+    return []
 
 
 class VideoBase(BaseModel):
@@ -13,6 +28,12 @@ class VideoBase(BaseModel):
     like_count: int = 0
     comment_count: int = 0
     tags: List[str] = Field(default_factory=list)
+    ai_categories: List[str] = Field(default_factory=list)
+
+    @field_validator("tags", "ai_categories", mode="before")
+    @classmethod
+    def coerce_list(cls, v):
+        return _list_or_empty(v)
 
 
 class VideoCreate(VideoBase):
@@ -38,6 +59,11 @@ class VideoResponse(VideoBase):
     detail_summary_generated_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
+
+    @field_validator("matched_keywords", mode="before")
+    @classmethod
+    def coerce_matched(cls, v):
+        return _list_or_empty(v)
 
     class Config:
         from_attributes = True

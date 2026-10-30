@@ -207,20 +207,20 @@
       "category_id": "hk-news",
       "search_name": "香港電台 RTHK",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UC6of7UYhctnYmqABjUqzuxw",
+      "channel_url": "https://www.youtube.com/channel/UC6of7UYhctnYmqABjUqzuxw",
+      "channel_name": "RTHK 香港電台",
+      "resolved_by": "youtube_data_api"
     },
     {
       "list_no": 2,
       "category_id": "hk-news",
       "search_name": "Now 新聞",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCChMBgirwM2nnT3Bbe8METQ",
+      "channel_url": "https://www.youtube.com/channel/UCChMBgirwM2nnT3Bbe8METQ",
+      "channel_name": "Now 財經 新聞",
+      "resolved_by": "yt-dlp"
     },
     {
       "list_no": 3,
@@ -267,10 +267,10 @@
       "category_id": "hk-news",
       "search_name": "獨立媒體 inmediahk",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCZpf3t79EhVe83Z76FZipCw",
+      "channel_url": "https://www.youtube.com/channel/UCZpf3t79EhVe83Z76FZipCw",
+      "channel_name": "獨立媒體",
+      "resolved_by": "manual"
     },
     {
       "list_no": 8,
@@ -287,10 +287,10 @@
       "category_id": "hk-news",
       "search_name": "東網 on.cc",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UC4NjmIegGw-HyQCmxwAEZBQ",
+      "channel_url": "https://www.youtube.com/channel/UC4NjmIegGw-HyQCmxwAEZBQ",
+      "channel_name": "on.cc東網",
+      "resolved_by": "yt-dlp"
     },
     {
       "list_no": 10,
@@ -307,20 +307,20 @@
       "category_id": "china-taiwan",
       "search_name": "鳳凰衛視 Phoenix TV",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCjD4KGy7D6zLregkhIo3KQg",
+      "channel_url": "https://www.youtube.com/channel/UCjD4KGy7D6zLregkhIo3KQg",
+      "channel_name": "PHOENIX TV",
+      "resolved_by": "manual"
     },
     {
       "list_no": 12,
       "category_id": "china-taiwan",
       "search_name": "文昭談古論今",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCtAIPjABiQD3qjlEl1T5VpA",
+      "channel_url": "https://www.youtube.com/channel/UCtAIPjABiQD3qjlEl1T5VpA",
+      "channel_name": "文昭談古論今 -Wen Zhao Official",
+      "resolved_by": "manual"
     },
     {
       "list_no": 13,
@@ -367,10 +367,10 @@
       "category_id": "intl-news",
       "search_name": "DW 中文",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCt5zpwa264A0B-gaYtv1IpA",
+      "channel_url": "https://www.youtube.com/channel/UCt5zpwa264A0B-gaYtv1IpA",
+      "channel_name": "美国之音中文网",
+      "resolved_by": "yt-dlp"
     },
     {
       "list_no": 18,
@@ -397,20 +397,20 @@
       "category_id": "finance",
       "search_name": "我要做股神",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UC666Z4JMa7hrwpINpRKkj6w",
+      "channel_url": "https://www.youtube.com/channel/UC666Z4JMa7hrwpINpRKkj6w",
+      "channel_name": "我要做股神 - 國語頻道",
+      "resolved_by": "yt-dlp"
     },
     {
       "list_no": 21,
       "category_id": "finance",
       "search_name": "學到賺到",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCsHTrBfiEQNmfMYcDAbhdWw",
+      "channel_url": "https://www.youtube.com/channel/UCsHTrBfiEQNmfMYcDAbhdWw",
+      "channel_name": "Learn to Earn",
+      "resolved_by": "manual"
     },
     {
       "list_no": 22,
@@ -447,40 +447,40 @@
       "category_id": "finance",
       "search_name": "信報財經新聞 HKEJ",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UClRaYVzu5DIh3kRZkXIX9WA",
+      "channel_url": "https://www.youtube.com/channel/UClRaYVzu5DIh3kRZkXIX9WA",
+      "channel_name": "信報財經新聞",
+      "resolved_by": "manual"
     },
     {
       "list_no": 26,
       "category_id": "finance",
       "search_name": "龔成",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCYWrfIFckZ_su_G_XtF9LZA",
+      "channel_url": "https://www.youtube.com/channel/UCYWrfIFckZ_su_G_XtF9LZA",
+      "channel_name": "龔成老師 致富平台",
+      "resolved_by": "yt-dlp"
     },
     {
       "list_no": 27,
       "category_id": "finance",
       "search_name": "止凡",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCDRFhFWwJYeBy_Q0b0YW1Sg",
+      "channel_url": "https://www.youtube.com/channel/UCDRFhFWwJYeBy_Q0b0YW1Sg",
+      "channel_name": "Zhifan Pan (zhifan)",
+      "resolved_by": "manual"
     },
     {
       "list_no": 28,
       "category_id": "finance",
       "search_name": "Raga Finance",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCETuQf4lzTrfevoHdSGo8Ew",
+      "channel_url": "https://www.youtube.com/channel/UCETuQf4lzTrfevoHdSGo8Ew",
+      "channel_name": "RagaFinance財經台",
+      "resolved_by": "manual"
     },
     {
       "list_no": 29,
@@ -497,10 +497,10 @@
       "category_id": "finance",
       "search_name": "投資可以很簡單",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCHJrDTvpKTAHhcS-eVcHsUA",
+      "channel_url": "https://www.youtube.com/channel/UCHJrDTvpKTAHhcS-eVcHsUA",
+      "channel_name": "Investing Simple",
+      "resolved_by": "manual"
     },
     {
       "list_no": 31,
@@ -517,10 +517,10 @@
       "category_id": "property",
       "search_name": "中原地產 Centaline",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCTX97MRd0x6COfLw4sj2fig",
+      "channel_url": "https://www.youtube.com/channel/UCTX97MRd0x6COfLw4sj2fig",
+      "channel_name": "中原地產 Centaline Property",
+      "resolved_by": "yt-dlp"
     },
     {
       "list_no": 33,
@@ -537,10 +537,10 @@
       "category_id": "property",
       "search_name": "利嘉閣地產 Ricacorp",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCDNtVb4RYNfnx3vfI1yKvLQ",
+      "channel_url": "https://www.youtube.com/channel/UCDNtVb4RYNfnx3vfI1yKvLQ",
+      "channel_name": "利嘉閣地產 RicaChannel",
+      "resolved_by": "yt-dlp"
     },
     {
       "list_no": 35,
@@ -557,10 +557,10 @@
       "category_id": "property",
       "search_name": "胡・說樓市",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCej-p3P_4xe5fRPKATsOk9A",
+      "channel_url": "https://www.youtube.com/channel/UCej-p3P_4xe5fRPKATsOk9A",
+      "channel_name": "胡‧說樓市",
+      "resolved_by": "yt-dlp"
     },
     {
       "list_no": 37,
@@ -617,10 +617,10 @@
       "category_id": "entertainment",
       "search_name": "啱Channel",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCkvTmCxCWguvwCkNA_hJjcQ",
+      "channel_url": "https://www.youtube.com/channel/UCkvTmCxCWguvwCkNA_hJjcQ",
+      "channel_name": "校啱Channel 海派團隊",
+      "resolved_by": "yt-dlp"
     },
     {
       "list_no": 43,
@@ -647,20 +647,20 @@
       "category_id": "entertainment",
       "search_name": "笑波子",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCDpK1rg5I9Zc3ToY13vbR3w",
+      "channel_url": "https://www.youtube.com/channel/UCDpK1rg5I9Zc3ToY13vbR3w",
+      "channel_name": "笑波子",
+      "resolved_by": "youtube_data_api"
     },
     {
       "list_no": 46,
       "category_id": "entertainment",
       "search_name": "達哥／Under Production",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCjXJRPekrfKIgbaZ5tj685A",
+      "channel_url": "https://www.youtube.com/channel/UCjXJRPekrfKIgbaZ5tj685A",
+      "channel_name": "Under Production",
+      "resolved_by": "manual"
     },
     {
       "list_no": 47,
@@ -677,20 +677,20 @@
       "category_id": "entertainment",
       "search_name": "商業電台 Hong Kong Commercial Radio",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCqz7Q8gOavVi_ZiGHePvLug",
+      "channel_url": "https://www.youtube.com/channel/UCqz7Q8gOavVi_ZiGHePvLug",
+      "channel_name": "商業電台 Hong Kong Toolbar",
+      "resolved_by": "yt-dlp"
     },
     {
       "list_no": 49,
       "category_id": "sports",
       "search_name": "體路 Sportsroad",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCaSSA73Z2bhj90zao0WLGKQ",
+      "channel_url": "https://www.youtube.com/channel/UCaSSA73Z2bhj90zao0WLGKQ",
+      "channel_name": "Sportsroad",
+      "resolved_by": "manual"
     },
     {
       "list_no": 50,
@@ -727,10 +727,10 @@
       "category_id": "sports",
       "search_name": "香港籃球總會 HKBA",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCATup_y27CxuLwoxeqJLwfA",
+      "channel_url": "https://www.youtube.com/channel/UCATup_y27CxuLwoxeqJLwfA",
+      "channel_name": "HKBA Official",
+      "resolved_by": "manual"
     },
     {
       "list_no": 54,
@@ -747,20 +747,20 @@
       "category_id": "sports",
       "search_name": "Olympics",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCTl3QQTvqHFjurroKxexy2Q",
+      "channel_url": "https://www.youtube.com/channel/UCTl3QQTvqHFjurroKxexy2Q",
+      "channel_name": "Olympic Games",
+      "resolved_by": "manual"
     },
     {
       "list_no": 56,
       "category_id": "horse-racing",
       "search_name": "香港賽馬會 The Hong Kong Jockey Club",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCf1RN5E-JrLCzEzmXafYiQg",
+      "channel_url": "https://www.youtube.com/channel/UCf1RN5E-JrLCzEzmXafYiQg",
+      "channel_name": "HKJC",
+      "resolved_by": "manual"
     },
     {
       "list_no": 57,
@@ -797,10 +797,10 @@
       "category_id": "opinion",
       "search_name": "志雲頻道",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UC16vXVRfHGax4QSLXhMoNfQ",
+      "channel_url": "https://www.youtube.com/channel/UC16vXVRfHGax4QSLXhMoNfQ",
+      "channel_name": "志雲頻道 stephenchannel",
+      "resolved_by": "yt-dlp"
     },
     {
       "list_no": 61,
@@ -857,10 +857,10 @@
       "category_id": "opinion",
       "search_name": "綠豆 Green Bean Media",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCOeRBxclINHJ4MWZXOuFPzg",
+      "channel_url": "https://www.youtube.com/channel/UCOeRBxclINHJ4MWZXOuFPzg",
+      "channel_name": "greenbeanmedia",
+      "resolved_by": "manual"
     },
     {
       "list_no": 67,
@@ -877,30 +877,30 @@
       "category_id": "food",
       "search_name": "職人吹水",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCZVmFDfn5WnixrHNf25MeJQ",
+      "channel_url": "https://www.youtube.com/channel/UCZVmFDfn5WnixrHNf25MeJQ",
+      "channel_name": "〈職人吹水〉@SingSingKitchen",
+      "resolved_by": "yt-dlp"
     },
     {
       "list_no": 69,
       "category_id": "food",
       "search_name": "Mama Cheung",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCXwdv_B9WPSqOmi5EARYknA",
+      "channel_url": "https://www.youtube.com/channel/UCXwdv_B9WPSqOmi5EARYknA",
+      "channel_name": "張媽媽廚房Mama Cheung",
+      "resolved_by": "manual"
     },
     {
       "list_no": 70,
       "category_id": "food",
       "search_name": "通少 Tony's Kitchen",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCm4EOUy_zQSHYCmW__7-QWA",
+      "channel_url": "https://www.youtube.com/channel/UCm4EOUy_zQSHYCmW__7-QWA",
+      "channel_name": "J M",
+      "resolved_by": "manual"
     },
     {
       "list_no": 71,
@@ -917,10 +917,10 @@
       "category_id": "food",
       "search_name": "成波之路",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCA-dotM93deEYcrwtcgJDiQ",
+      "channel_url": "https://www.youtube.com/channel/UCA-dotM93deEYcrwtcgJDiQ",
+      "channel_name": "成波之路 my ways to get fat",
+      "resolved_by": "yt-dlp"
     },
     {
       "list_no": 73,
@@ -947,20 +947,20 @@
       "category_id": "food",
       "search_name": "飲食男女",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCfnyuuRXouOvc790uxsLgkg",
+      "channel_url": "https://www.youtube.com/channel/UCfnyuuRXouOvc790uxsLgkg",
+      "channel_name": "EatsandDrinks",
+      "resolved_by": "manual"
     },
     {
       "list_no": 76,
       "category_id": "food",
       "search_name": "OpenRice Hong Kong",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UC5uA4eLZju_N1PUjSMFQWOQ",
+      "channel_url": "https://www.youtube.com/channel/UC5uA4eLZju_N1PUjSMFQWOQ",
+      "channel_name": "OpenRice HK",
+      "resolved_by": "yt-dlp"
     },
     {
       "list_no": 77,
@@ -997,50 +997,50 @@
       "category_id": "travel",
       "search_name": "雪姨 Snow E",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCjn1kWmv_eC0Fzkx5gmjnVA",
+      "channel_url": "https://www.youtube.com/channel/UCjn1kWmv_eC0Fzkx5gmjnVA",
+      "channel_name": "Snow E",
+      "resolved_by": "yt-dlp"
     },
     {
       "list_no": 81,
       "category_id": "travel",
       "search_name": "霍哥 Jeffrey Fok",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCe4mNtDMLIoii-uXFi86few",
+      "channel_url": "https://www.youtube.com/channel/UCe4mNtDMLIoii-uXFi86few",
+      "channel_name": "jeffreyfok",
+      "resolved_by": "manual"
     },
     {
       "list_no": 82,
       "category_id": "travel",
       "search_name": "Jason 大J",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UC4nsi0oM9WBNFv1RdLh3c2g",
+      "channel_url": "https://www.youtube.com/channel/UC4nsi0oM9WBNFv1RdLh3c2g",
+      "channel_name": "JASON",
+      "resolved_by": "yt-dlp"
     },
     {
       "list_no": 83,
       "category_id": "travel",
       "search_name": "JASON816",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UC4nsi0oM9WBNFv1RdLh3c2g",
+      "channel_url": "https://www.youtube.com/channel/UC4nsi0oM9WBNFv1RdLh3c2g",
+      "channel_name": "JASON",
+      "resolved_by": "manual"
     },
     {
       "list_no": 84,
       "category_id": "travel",
       "search_name": "小麻うまる",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UC0Y7fhYUMee7mP7ixCQgMcg",
+      "channel_url": "https://www.youtube.com/channel/UC0Y7fhYUMee7mP7ixCQgMcg",
+      "channel_name": "小麻うまる malojam",
+      "resolved_by": "yt-dlp"
     },
     {
       "list_no": 85,
@@ -1057,50 +1057,50 @@
       "category_id": "travel",
       "search_name": "Soko 和泉素行",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCo7u2pqkMjcMyITNCWt9VZw",
+      "channel_url": "https://www.youtube.com/channel/UCo7u2pqkMjcMyITNCWt9VZw",
+      "channel_name": "SOKO 和泉素行 我點解來咗香港? 我は何しに香港へ?",
+      "resolved_by": "yt-dlp"
     },
     {
       "list_no": 87,
       "category_id": "travel",
       "search_name": "U Travel",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UC3xhnlEOxaOkmNioBOozuyA",
+      "channel_url": "https://www.youtube.com/channel/UC3xhnlEOxaOkmNioBOozuyA",
+      "channel_name": "U Travel 旅遊頻道",
+      "resolved_by": "yt-dlp"
     },
     {
       "list_no": 88,
       "category_id": "travel",
       "search_name": "GOtrip 旅遊看世界",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UC6p6VyXvzRs8SFXr0JGcG4A",
+      "channel_url": "https://www.youtube.com/channel/UC6p6VyXvzRs8SFXr0JGcG4A",
+      "channel_name": "GOtriphk",
+      "resolved_by": "yt-dlp"
     },
     {
       "list_no": 89,
       "category_id": "travel",
       "search_name": "窮遊達人 Mr. & Mrs. Ho",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCtbZI8dhWdMhOdAUJZGRHVA",
+      "channel_url": "https://www.youtube.com/channel/UCtbZI8dhWdMhOdAUJZGRHVA",
+      "channel_name": "MrMrsho",
+      "resolved_by": "manual"
     },
     {
       "list_no": 90,
       "category_id": "travel",
       "search_name": "背包旅神",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCaR6lmbHjOz6PaDK0i7GgoA",
+      "channel_url": "https://www.youtube.com/channel/UCaR6lmbHjOz6PaDK0i7GgoA",
+      "channel_name": "背包旅神Backpackhai",
+      "resolved_by": "yt-dlp"
     },
     {
       "list_no": 91,
@@ -1117,10 +1117,10 @@
       "category_id": "tech",
       "search_name": "科技狗 3C Dog",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCpgUQ11xrXpsIlZOGdAskrQ",
+      "channel_url": "https://www.youtube.com/channel/UCpgUQ11xrXpsIlZOGdAskrQ",
+      "channel_name": "3CDOG",
+      "resolved_by": "manual"
     },
     {
       "list_no": 93,
@@ -1137,20 +1137,20 @@
       "category_id": "tech",
       "search_name": "ePrice HK",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCl1SBw0jccwdAhOa-y7zV-w",
+      "channel_url": "https://www.youtube.com/channel/UCl1SBw0jccwdAhOa-y7zV-w",
+      "channel_name": "ePrice HK 科技頻道",
+      "resolved_by": "yt-dlp"
     },
     {
       "list_no": 95,
       "category_id": "tech",
       "search_name": "DCFever",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCS28D9DWvYmNEz4XSENj5Jw",
+      "channel_url": "https://www.youtube.com/channel/UCS28D9DWvYmNEz4XSENj5Jw",
+      "channel_name": "dcfever",
+      "resolved_by": "manual"
     },
     {
       "list_no": 96,
@@ -1267,20 +1267,20 @@
       "category_id": "fashion",
       "search_name": "BOMBA 娜",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCAE47GX6EvTQYOmW0UUFZpg",
+      "channel_url": "https://www.youtube.com/channel/UCAE47GX6EvTQYOmW0UUFZpg",
+      "channel_name": "BOMBA",
+      "resolved_by": "manual"
     },
     {
       "list_no": 108,
       "category_id": "fashion",
       "search_name": "Sue Chang",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCiSUSUuutg_w-nSILsvMKnw",
+      "channel_url": "https://www.youtube.com/channel/UCiSUSUuutg_w-nSILsvMKnw",
+      "channel_name": "suechangg",
+      "resolved_by": "yt-dlp"
     },
     {
       "list_no": 109,
@@ -1307,40 +1307,40 @@
       "category_id": "health",
       "search_name": "醫院管理局 Hospital Authority",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UC3dfB08Exi0wSZlRcpk9T-w",
+      "channel_url": "https://www.youtube.com/channel/UC3dfB08Exi0wSZlRcpk9T-w",
+      "channel_name": "Hospital Authority",
+      "resolved_by": "manual"
     },
     {
       "list_no": 112,
       "category_id": "health",
       "search_name": "養和醫院 HKSH",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UC9rkg2KxY_Y4AWgdmC3Pnaw",
+      "channel_url": "https://www.youtube.com/channel/UC9rkg2KxY_Y4AWgdmC3Pnaw",
+      "channel_name": "HKSH",
+      "resolved_by": "manual"
     },
     {
       "list_no": 113,
       "category_id": "health",
       "search_name": "香港中文大學醫學院 CU Medicine",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCrvLin5hlhMXc6XFMp21pGg",
+      "channel_url": "https://www.youtube.com/channel/UCrvLin5hlhMXc6XFMp21pGg",
+      "channel_name": "Dr. Lawrence Yeh",
+      "resolved_by": "manual"
     },
     {
       "list_no": 114,
       "category_id": "health",
       "search_name": "Bowtie 保泰",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCD5Lx-3KCYZzCzGF2A60STg",
+      "channel_url": "https://www.youtube.com/channel/UCD5Lx-3KCYZzCzGF2A60STg",
+      "channel_name": "Bowtie Insurance 保泰人壽",
+      "resolved_by": "yt-dlp"
     },
     {
       "list_no": 115,
@@ -1357,10 +1357,10 @@
       "category_id": "family",
       "search_name": "Mameshare 媽咪幫",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UC3yjJ_11s0hKo3NXOWqoz3w",
+      "channel_url": "https://www.youtube.com/channel/UC3yjJ_11s0hKo3NXOWqoz3w",
+      "channel_name": "mameshare",
+      "resolved_by": "manual"
     },
     {
       "list_no": 117,
@@ -1377,10 +1377,10 @@
       "category_id": "culture",
       "search_name": "M+",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCLsE-cTgFvwXaZ8H0DsfOIQ",
+      "channel_url": "https://www.youtube.com/channel/UCLsE-cTgFvwXaZ8H0DsfOIQ",
+      "channel_name": "M Plus",
+      "resolved_by": "manual"
     },
     {
       "list_no": 119,
@@ -1397,30 +1397,30 @@
       "category_id": "culture",
       "search_name": "西九文化區 West Kowloon Cultural District",
       "is_new_suggestion": false,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCyAp0FwFzmGX6ryX0K55QWg",
+      "channel_url": "https://www.youtube.com/channel/UCyAp0FwFzmGX6ryX0K55QWg",
+      "channel_name": "westkowlooncultural",
+      "resolved_by": "yt-dlp"
     },
     {
       "list_no": 121,
       "category_id": "hk-news",
       "search_name": "Hong Kong Free Press HKFP",
       "is_new_suggestion": true,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UC36umLEHbPUS-lpucrXPcGQ",
+      "channel_url": "https://www.youtube.com/channel/UC36umLEHbPUS-lpucrXPcGQ",
+      "channel_name": "Hong Kong Free Press",
+      "resolved_by": "manual"
     },
     {
       "list_no": 122,
       "category_id": "hk-news",
       "search_name": "Channel C HK",
       "is_new_suggestion": true,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCA-jJuLuT0y4ol6G3TMlkZw",
+      "channel_url": "https://www.youtube.com/channel/UCA-jJuLuT0y4ol6G3TMlkZw",
+      "channel_name": "Channel C HK LIVE",
+      "resolved_by": "yt-dlp"
     },
     {
       "list_no": 123,
@@ -1457,20 +1457,20 @@
       "category_id": "intl-opinion",
       "search_name": "明仔 Mingjai14",
       "is_new_suggestion": true,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCDoEdJo-PI-EKGNKomwLroQ",
+      "channel_url": "https://www.youtube.com/channel/UCDoEdJo-PI-EKGNKomwLroQ",
+      "channel_name": "mingjai14",
+      "resolved_by": "manual"
     },
     {
       "list_no": 127,
       "category_id": "culture-commentary",
       "search_name": "GingerLemonCola 薑檸樂",
       "is_new_suggestion": true,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCo0lvDJ5ikc3hhD30ttGznw",
+      "channel_url": "https://www.youtube.com/channel/UCo0lvDJ5ikc3hhD30ttGznw",
+      "channel_name": "gingerlemoncola",
+      "resolved_by": "manual"
     },
     {
       "list_no": 128,
@@ -1497,10 +1497,10 @@
       "category_id": "travel-food",
       "search_name": "Kiki & May－隨意吃樂部",
       "is_new_suggestion": true,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCXDc-wMIe8T9FvAtTHcok5g",
+      "channel_url": "https://www.youtube.com/channel/UCXDc-wMIe8T9FvAtTHcok5g",
+      "channel_name": "Kiki and may",
+      "resolved_by": "manual"
     },
     {
       "list_no": 131,
@@ -1527,40 +1527,40 @@
       "category_id": "travel",
       "search_name": "肉比頭 Zoebitalk",
       "is_new_suggestion": true,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCs4jRrfq8fWWwMj6-Xj_wHw",
+      "channel_url": "https://www.youtube.com/channel/UCs4jRrfq8fWWwMj6-Xj_wHw",
+      "channel_name": "Zoebitalk",
+      "resolved_by": "manual"
     },
     {
       "list_no": 134,
       "category_id": "travel",
       "search_name": "旅行 YJ",
       "is_new_suggestion": true,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCTuZ8tmjvj7WLokZzdjrFVg",
+      "channel_url": "https://www.youtube.com/channel/UCTuZ8tmjvj7WLokZzdjrFVg",
+      "channel_name": "YJ Travel",
+      "resolved_by": "manual"
     },
     {
       "list_no": 135,
       "category_id": "finance",
       "search_name": "富途牛牛 Futu",
       "is_new_suggestion": true,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCUedB6UJV0m7OSMGv84C7XQ",
+      "channel_url": "https://www.youtube.com/channel/UCUedB6UJV0m7OSMGv84C7XQ",
+      "channel_name": "FuTuNiuNiu",
+      "resolved_by": "manual"
     },
     {
       "list_no": 136,
       "category_id": "finance",
       "search_name": "香港交易所 HKEX",
       "is_new_suggestion": true,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCj_tqYfFGDByQV8LWIDMBIw",
+      "channel_url": "https://www.youtube.com/channel/UCj_tqYfFGDByQV8LWIDMBIw",
+      "channel_name": "HKEX Group",
+      "resolved_by": "manual"
     },
     {
       "list_no": 137,
@@ -1607,10 +1607,10 @@
       "category_id": "entertainment",
       "search_name": "TVB 官方頻道",
       "is_new_suggestion": true,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCgVstyPcfgQ8Dpmoy8qxAmA",
+      "channel_url": "https://www.youtube.com/channel/UCgVstyPcfgQ8Dpmoy8qxAmA",
+      "channel_name": "TVB USA Official",
+      "resolved_by": "manual"
     },
     {
       "list_no": 142,
@@ -1627,10 +1627,10 @@
       "category_id": "entertainment-music",
       "search_name": "ERROR",
       "is_new_suggestion": true,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCJh3j-9JqMEDyUbwKzt7rLA",
+      "channel_url": "https://www.youtube.com/channel/UCJh3j-9JqMEDyUbwKzt7rLA",
+      "channel_name": "ERROR HERE",
+      "resolved_by": "yt-dlp"
     },
     {
       "list_no": 144,
@@ -1647,10 +1647,10 @@
       "category_id": "entertainment-music",
       "search_name": "Eason Chan 陳奕迅",
       "is_new_suggestion": true,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCnafe6M9Itwt08RFI51L6mw",
+      "channel_url": "https://www.youtube.com/channel/UCnafe6M9Itwt08RFI51L6mw",
+      "channel_name": "Eason Chan",
+      "resolved_by": "manual"
     },
     {
       "list_no": 146,
@@ -1667,20 +1667,20 @@
       "category_id": "film-culture",
       "search_name": "歐錦棠「乜乜棠水舖」",
       "is_new_suggestion": true,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCF02qCj0VNKp6p7gEjsCGOQ",
+      "channel_url": "https://www.youtube.com/channel/UCF02qCj0VNKp6p7gEjsCGOQ",
+      "channel_name": "乜乜棠水舖 The Stephen Au Show",
+      "resolved_by": "yt-dlp"
     },
     {
       "list_no": 148,
       "category_id": "film-culture",
       "search_name": "電影朝聖 Gary",
       "is_new_suggestion": true,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCrZraINAYc8gwQJ4JJWOPQg",
+      "channel_url": "https://www.youtube.com/channel/UCrZraINAYc8gwQJ4JJWOPQg",
+      "channel_name": "Gary Wong電影朝聖",
+      "resolved_by": "yt-dlp"
     },
     {
       "list_no": 149,
@@ -1747,20 +1747,20 @@
       "category_id": "tech-audio",
       "search_name": "feverSound.com",
       "is_new_suggestion": true,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UC2ksiXmUEiJ7ZFcnH2JjkNw",
+      "channel_url": "https://www.youtube.com/channel/UC2ksiXmUEiJ7ZFcnH2JjkNw",
+      "channel_name": "feversound",
+      "resolved_by": "manual"
     },
     {
       "list_no": 156,
       "category_id": "tech-audio",
       "search_name": "Post76 玩樂網",
       "is_new_suggestion": true,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCSBkm4LwpgBmcA3MCtO8vqg",
+      "channel_url": "https://www.youtube.com/channel/UCSBkm4LwpgBmcA3MCtO8vqg",
+      "channel_name": "Post76影音玩樂網",
+      "resolved_by": "yt-dlp"
     },
     {
       "list_no": 157,
@@ -1777,10 +1777,10 @@
       "category_id": "tech",
       "search_name": "ezone.hk",
       "is_new_suggestion": true,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UC3HlGlmGZTjLzEqABD3p9mg",
+      "channel_url": "https://www.youtube.com/channel/UC3HlGlmGZTjLzEqABD3p9mg",
+      "channel_name": "ezonehk",
+      "resolved_by": "manual"
     },
     {
       "list_no": 159,
@@ -1817,20 +1817,20 @@
       "category_id": "food",
       "search_name": "小高姐的魔法調料",
       "is_new_suggestion": true,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UC8EiIMC3XoQthW_EAcKkemw",
+      "channel_url": "https://www.youtube.com/channel/UC8EiIMC3XoQthW_EAcKkemw",
+      "channel_name": "小高姐的幸福生活",
+      "resolved_by": "manual"
     },
     {
       "list_no": 163,
       "category_id": "food",
       "search_name": "曼食慢語 Amanda Tastes",
       "is_new_suggestion": true,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCmXkJ9ReY5hjvYPcnmBwing",
+      "channel_url": "https://www.youtube.com/channel/UCmXkJ9ReY5hjvYPcnmBwing",
+      "channel_name": "曼食慢语 Amanda Tastes",
+      "resolved_by": "manual"
     },
     {
       "list_no": 164,
@@ -1867,40 +1867,40 @@
       "category_id": "family-edu",
       "search_name": "阿滴英文",
       "is_new_suggestion": true,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCeo3JwE3HezUWFdVcehQk9Q",
+      "channel_url": "https://www.youtube.com/channel/UCeo3JwE3HezUWFdVcehQk9Q",
+      "channel_name": "阿滴",
+      "resolved_by": "manual"
     },
     {
       "list_no": 168,
       "category_id": "edu-science",
       "search_name": "啟點文化",
       "is_new_suggestion": true,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCu9g3gzMOwLlzn_31gdR_4Q",
+      "channel_url": "https://www.youtube.com/channel/UCu9g3gzMOwLlzn_31gdR_4Q",
+      "channel_name": "啟點文化有限公司",
+      "resolved_by": "yt-dlp"
     },
     {
       "list_no": 169,
       "category_id": "culture",
       "search_name": "香港管弦樂團 Hong Kong Philharmonic Orchestra",
       "is_new_suggestion": true,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UCr71gZYIaUmKGGVcWAlw_sQ",
+      "channel_url": "https://www.youtube.com/channel/UCr71gZYIaUmKGGVcWAlw_sQ",
+      "channel_name": "HKPhilharmonic",
+      "resolved_by": "manual"
     },
     {
       "list_no": 170,
       "category_id": "culture",
       "search_name": "香港中樂團 Hong Kong Chinese Orchestra",
       "is_new_suggestion": true,
-      "youtube_channel_id": null,
-      "channel_url": null,
-      "channel_name": null,
-      "resolved_by": null
+      "youtube_channel_id": "UC-1MkEc6S8hQn5kibrzOWrg",
+      "channel_url": "https://www.youtube.com/channel/UC-1MkEc6S8hQn5kibrzOWrg",
+      "channel_name": "香港中樂團HKCO",
+      "resolved_by": "yt-dlp"
     }
   ],
   "existing_channel_category_map": {

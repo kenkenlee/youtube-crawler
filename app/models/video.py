@@ -18,6 +18,7 @@ class Video(Base):
     like_count = Column(BigInteger, default=0)
     comment_count = Column(BigInteger, default=0)
     tags = Column(JSON, default=list)
+    ai_categories = Column(JSON, default=list)
     matched_keywords = Column(JSON, default=list)  # Keywords that matched this video
     video_url = Column(String(500), nullable=True)
     thumbnail_url = Column(String(500), nullable=True)

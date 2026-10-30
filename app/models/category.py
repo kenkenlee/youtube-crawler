@@ -2,10 +2,11 @@ from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
+from app.models.association import channel_categories
 
 
 class Category(Base):
-    """Editorial category for channels (slug matches the catalog id)."""
+    """Editorial category for channels (slug matches the catalog / botalk id)."""
 
     __tablename__ = "categories"
 
@@ -17,7 +18,11 @@ class Category(Base):
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
-    channels = relationship("Channel", back_populates="category")
+    channels = relationship(
+        "Channel",
+        secondary=channel_categories,
+        back_populates="categories",
+    )
 
     def __repr__(self):
         return f"<Category(slug='{self.slug}', zh='{self.name_zh}')>"

@@ -2,7 +2,10 @@
 
 let currentChannelPage = 0;
 
+let channelViewMode = localStorage.getItem('channelViewMode') || 'list';
+
 $(document).ready(function() {
+    setChannelViewMode(channelViewMode, true);
     loadChannels();
 
     // Filter by active only
@@ -19,6 +22,11 @@ function loadChannels(page = 0) {
 
     let url = `/api/channels?skip=${skip}&limit=${limit}`;
     if (showActiveOnly) url += '&crawl_enabled=true';
+
+    if (channelViewMode === 'categories') {
+        loadChannelsByCategory();
+        return;
+    }
 
     $.get(url, function(data) {
         const container = $('#channelsList');
@@ -113,6 +121,7 @@ function createChannelCard(channel) {
                             <div class="channel-meta">
                                 ${statusBadge}
                                 <span class="badge bg-primary ms-1">${channel.crawl_frequency}</span>
+                                ${(channel.categories || []).map(c => `<span class="badge bg-light text-dark border ms-1">${c.name_zh || c.slug}</span>`).join('') || (channel.category ? `<span class="badge bg-light text-dark border ms-1">${channel.category.name_zh || channel.category.slug}</span>` : '')}
                                 <span class="text-muted small ms-2">
                                     <i class="bi bi-play-circle"></i> ${channel.video_count} videos
                                     <span class="text-success">(${channel.summarized_count} summarized)</span>
@@ -323,15 +332,21 @@ function viewChannel(channelId) {
 }
 
 function editChannel(channelId) {
-    // Load channel data
-    $.get(`/api/channels/${channelId}`, function(channel) {
+    $.when($.get(`/api/channels/${channelId}`), $.get('/api/categories/')).done(function(chRes, catRes) {
+        const channel = chRes[0];
+        const cats = catRes[0] || [];
         $('#editChannelId').val(channel.id);
         $('#editChannelName').val(channel.channel_name);
         $('#editChannelDescription').val(channel.description || '');
         $('#editChannelKeywords').val(channel.keywords ? channel.keywords.join(', ') : '');
         $('#editCrawlFrequency').val(channel.crawl_frequency);
         $('#editCrawlEnabled').prop('checked', channel.crawl_enabled);
-
+        const selected = new Set((channel.categories || []).map(function(c) { return c.id; }));
+        if (channel.category_id) selected.add(channel.category_id);
+        const $sel = $('#editChannelCategories').empty();
+        cats.forEach(function(c) {
+            $sel.append($('<option>').val(c.id).text((c.name_zh || c.slug) + ' / ' + (c.name_en || '')).prop('selected', selected.has(c.id)));
+        });
         $('#editChannelModal').modal('show');
     }).fail(function() {
         alert('Failed to load channel data');
@@ -348,12 +363,14 @@ function updateChannel() {
 
     const keywordsList = keywords ? keywords.split(',').map(k => k.trim()).filter(k => k) : [];
 
+    const categoryIds = ($('#editChannelCategories').val() || []).map(String);
     const payload = {
         channel_name: channelName,
         description: description,
         keywords: keywordsList,
         crawl_enabled: crawlEnabled,
-        crawl_frequency: crawlFrequency
+        crawl_frequency: crawlFrequency,
+        category_ids: categoryIds
     };
 
     $.ajax({
@@ -582,4 +599,88 @@ function extractVideoId(url) {
     if (match) return match[1];
 
     return null;
+}
+
+
+// ---------- Categories view (frontpage) ----------
+function setChannelViewMode(mode, skipLoad) {
+    channelViewMode = mode === 'categories' ? 'categories' : 'list';
+    localStorage.setItem('channelViewMode', channelViewMode);
+    $('#viewListBtn').toggleClass('active', channelViewMode === 'list');
+    $('#viewCategoriesBtn').toggleClass('active', channelViewMode === 'categories');
+    if (!skipLoad) {
+        currentChannelPage = 0;
+        loadChannels();
+    }
+}
+
+function loadChannelsByCategory() {
+    const showActiveOnly = $('#showActiveOnly').is(':checked');
+    $('#channelPagination').remove();
+    const container = $('#channelsList');
+    container.html('<p class="text-muted">Loading categories…</p>');
+
+    $.when(
+        $.get('/api/categories/'),
+        $.get('/api/channels/?skip=0&limit=500' + (showActiveOnly ? '&crawl_enabled=true' : ''))
+    ).done(function(catRes, chRes) {
+        const cats = catRes[0] || [];
+        const channels = chRes[0] || [];
+        const byCat = {};
+        channels.forEach(function(ch) {
+            const list = (ch.categories && ch.categories.length) ? ch.categories : (ch.category ? [ch.category] : []);
+            if (!list.length) {
+                (byCat.__none__ = byCat.__none__ || []).push(ch);
+                return;
+            }
+            list.forEach(function(c) {
+                (byCat[c.id] = byCat[c.id] || []).push(ch);
+            });
+        });
+
+        if (!cats.length && !channels.length) {
+            container.html('<p class="text-muted">No channels found.</p>');
+            return;
+        }
+
+        let html = '<div class="accordion" id="channelCategoryAccordion">';
+        cats.forEach(function(cat, idx) {
+            const members = byCat[cat.id] || [];
+            const collapseId = 'catCollapse' + cat.id;
+            html += `
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button ${idx === 0 ? '' : 'collapsed'}" type="button" data-bs-toggle="collapse" data-bs-target="#${collapseId}">
+                  <strong class="me-2">${cat.name_zh || cat.slug}</strong>
+                  <span class="text-muted small me-2">${cat.name_en || ''}</span>
+                  <span class="badge bg-secondary">${members.length}</span>
+                </button>
+              </h2>
+              <div id="${collapseId}" class="accordion-collapse collapse ${idx === 0 ? 'show' : ''}" data-bs-parent="#channelCategoryAccordion">
+                <div class="accordion-body">
+                  ${members.length ? members.map(createChannelCard).join('') : '<p class="text-muted mb-0">No channels in this category.</p>'}
+                </div>
+              </div>
+            </div>`;
+        });
+        const uncat = byCat.__none__ || [];
+        if (uncat.length) {
+            html += `
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#catCollapseNone">
+                  <strong class="me-2">Uncategorized</strong>
+                  <span class="badge bg-warning text-dark">${uncat.length}</span>
+                </button>
+              </h2>
+              <div id="catCollapseNone" class="accordion-collapse collapse" data-bs-parent="#channelCategoryAccordion">
+                <div class="accordion-body">${uncat.map(createChannelCard).join('')}</div>
+              </div>
+            </div>`;
+        }
+        html += '</div>';
+        container.html(html);
+    }).fail(function() {
+        container.html('<p class="text-danger">Failed to load categories view</p>');
+    });
 }

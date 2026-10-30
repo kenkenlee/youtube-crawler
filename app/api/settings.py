@@ -99,3 +99,11 @@ def youtube_quota_stats():
 
     return get_today_summary()
 
+
+@router.get("/catalog-stats")
+def catalog_stats():
+    """Summary of categories / channels / videos fetched (catalog content stats)."""
+    from app.services.catalog_stats_service import get_catalog_stats
+
+    return get_catalog_stats()
+

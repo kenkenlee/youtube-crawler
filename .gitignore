@@ -48,3 +48,18 @@ data/logs/
 .DS_Store
 Thumbs.db
 .venv/
+
+# Local/runtime (do not commit)
+.env.bak*
+.env.*backup*
+backups/
+data/backups/
+data/_t*.txt
+data/_vm.b64
+*.bak
+*.bak-*
+*.py.bak*
+DEPLOYED_SHA
+docker-compose.override.yml
+docker-compose.override.yml.new
+app/models/video.py.new

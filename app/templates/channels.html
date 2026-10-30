@@ -24,13 +24,23 @@
     <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <h5 class="mb-0">All Channels</h5>
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="showActiveOnly">
-                        <label class="form-check-label" for="showActiveOnly">
-                            Show Active Only
-                        </label>
+                    <div class="d-flex align-items-center gap-3 flex-wrap">
+                        <div class="btn-group btn-group-sm" role="group" id="channelViewToggle">
+                            <button type="button" class="btn btn-outline-secondary active" id="viewListBtn" onclick="setChannelViewMode('list')">
+                                <i class="bi bi-list-ul"></i> List
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="viewCategoriesBtn" onclick="setChannelViewMode('categories')">
+                                <i class="bi bi-folder2-open"></i> Categories
+                            </button>
+                        </div>
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" id="showActiveOnly">
+                            <label class="form-check-label" for="showActiveOnly">
+                                Show Active Only
+                            </label>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -126,6 +136,11 @@
                         <input type="text" class="form-control" id="editChannelKeywords">
                     </div>
                     <div class="mb-3">
+                        <label class="form-label">Categories <span class="text-muted">(one or more)</span></label>
+                        <select class="form-select" id="editChannelCategories" multiple size="8"></select>
+                        <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple. Primary for botalk sync is the lowest sort-order category.</small>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label">Crawl Frequency</label>
                         <select class="form-select" id="editCrawlFrequency">
                             <option value="manual">Manual</option>
@@ -213,5 +228,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="/static/js/channels.js"></script>
+<script src="/static/js/channels.js?v=cat1"></script>
 {% endblock %}

@@ -7,7 +7,7 @@ import re
 
 from app.config import settings
 from app.services.settings_service import SettingsService
-from app.services.youtube_quota_service import record_api_call
+from app.services.youtube_quota_service import record_api_call, record_api_error
 
 logger = logging.getLogger(__name__)
 
@@ -31,9 +31,15 @@ class YouTubeService:
 
 
     def _yt_execute(self, method: str, request):
-        """Execute a YouTube API request and record estimated quota units."""
+        """Execute a YouTube API request and record estimated quota units + errors."""
         try:
             return request.execute()
+        except HttpError as e:
+            try:
+                record_api_error(method, e)
+            except Exception:
+                pass
+            raise
         finally:
             # Count the attempt even if it fails (failed calls still consume quota
             # for most Data API methods once accepted by Google).

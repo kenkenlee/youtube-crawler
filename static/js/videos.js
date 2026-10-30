@@ -379,7 +379,11 @@ function viewVideoDetails(videoId, afterRender) {
 
         const tags = video.tags && video.tags.length > 0
             ? video.tags.map(t => `<span class="badge bg-secondary me-1">${t}</span>`).join('')
-            : '<span class="text-muted">No tags</span>';
+            : '<span class="text-muted">No desc tags</span>';
+
+        const aiCategories = video.ai_categories && video.ai_categories.length > 0
+            ? video.ai_categories.map(t => `<span class="badge bg-primary me-1">${escAttr(t)}</span>`).join("")
+            : '<span class="text-muted">No AI categories yet</span>';
 
         const keywords = video.matched_keywords && video.matched_keywords.length > 0
             ? video.matched_keywords.map(k => `<span class="badge bg-info me-1">${k}</span>`).join('')
@@ -422,7 +426,11 @@ function viewVideoDetails(videoId, afterRender) {
                         <tr><td><strong>Comments:</strong></td><td>${formatNumber(video.comment_count)}</td></tr>
                     </table>
                     <div class="mb-2">
-                        <strong>Tags:</strong><br>${tags}
+                        <strong>Description tags</strong><br>${tags}
+                    </div>
+                    <div class="mb-2">
+                        <strong>AI categories</strong>
+                        <small class="text-muted">(from title / summary / description)</small><br>${aiCategories}
                     </div>
                     <div class="mb-2">
                         <strong>Matched Keywords:</strong><br>${keywords}

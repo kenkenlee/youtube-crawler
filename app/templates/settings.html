@@ -37,6 +37,7 @@
                 </button>
             </div>
             <div class="card-body">
+                <div id="ytQuotaAlert" class="d-none" role="alert"></div>
                 <p class="text-muted small mb-3" id="ytQuotaNote">
                     Estimated units for this crawler process. Quota day follows Google Pacific Time (midnight PT reset), not Asia/Shanghai.
                 </p>
@@ -113,6 +114,56 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="mt-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0">API error summary (today)</h6>
+                        <span class="badge text-bg-secondary" id="ytErrorTotalBadge">0</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Reason</th>
+                                    <th>Method</th>
+                                    <th class="text-end">HTTP</th>
+                                    <th class="text-end">Count</th>
+                                    <th>Last message</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ytErrorBody">
+                                <tr><td colspan="5" class="text-muted">Loading…</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="form-text mt-2">
+                        Errors are recorded when YouTube Data API calls fail (e.g. 403 <code>quotaExceeded</code>).
+                        A red alert appears when daily quota is exceeded; a yellow alert when estimated usage is ≥ 80%.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Categories / Channel management entry -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-folder2-open"></i> Categories / Channel management</h5>
+                <a class="btn btn-sm btn-outline-primary" href="/categories">
+                    <i class="bi bi-box-arrow-up-right"></i> Open
+                </a>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-2">
+                    Manage categories, assign channels to one or more categories, and view catalog summary stats.
+                </p>
+                <a class="btn btn-primary" href="/categories">
+                    <i class="bi bi-folder2-open"></i> Categories / Channel management
+                </a>
             </div>
         </div>
     </div>

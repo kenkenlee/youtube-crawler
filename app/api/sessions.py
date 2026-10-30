@@ -8,6 +8,7 @@ from app.models.crawl_session import CrawlSession, SessionVideo
 from app.models.channel import Channel
 from app.schemas.session import SessionCreate, SessionResponse, SessionProgress
 from app.services.crawler_service import CrawlerService
+from app.tasks.crawl_queue import enqueue_crawl
 
 router = APIRouter()
 
@@ -35,8 +36,11 @@ def create_session(session: SessionCreate, background_tasks: BackgroundTasks, db
     db.commit()
     db.refresh(db_session)
 
-    # Start crawling in background
-    background_tasks.add_task(run_crawl_session, db_session.id)
+    # Serial crawl queue — never start parallel BackgroundTasks crawls
+    # Priority: NEWS-named sessions jump the serial queue
+    name_l = (db_session.session_name or "").lower()
+    prio = 0 if name_l.startswith("news") or "news slot" in name_l else 1
+    enqueue_crawl(db_session.id, priority=prio)
 
     return db_session
 
