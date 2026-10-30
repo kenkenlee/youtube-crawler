@@ -48,3 +48,5 @@ data/logs/
 .DS_Store
 Thumbs.db
 .venv/
+DEPLOYED_SHA
+data/
