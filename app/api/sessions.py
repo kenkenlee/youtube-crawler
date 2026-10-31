@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query, Response
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 import asyncio
 
 from app.database import get_db
@@ -82,18 +82,43 @@ def run_crawl_session(session_id: int):
 
 @router.get("/", response_model=List[SessionResponse])
 def list_sessions(
-    skip: int = 0,
-    limit: int = 50,
-    status: str = None,
-    db: Session = Depends(get_db)
+    response: Response,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(10, ge=1),
+    status: Optional[str] = Query(None),
+    recurring: Optional[bool] = Query(
+        None,
+        description="When true, return only recurring templates (not child runs)",
+    ),
+    db: Session = Depends(get_db),
 ):
-    """List all crawl sessions"""
+    """List crawl sessions, newest first.
+
+    Page size defaults to 10 (``skip`` / ``limit``). The total matching rows
+    is returned in the ``X-Total-Count`` header so clients can page through
+    older sessions. ``status`` filters the list. ``recurring=true`` returns
+    only recurring templates (an interval is set and the row is not a child run).
+    """
     query = db.query(CrawlSession)
 
     if status:
         query = query.filter(CrawlSession.status == status)
 
-    sessions = query.order_by(CrawlSession.created_at.desc()).offset(skip).limit(limit).all()
+    if recurring:
+        query = query.filter(
+            CrawlSession.recurrence_hours.isnot(None),
+            CrawlSession.recurrence_hours > 0,
+            CrawlSession.parent_session_id.is_(None),
+        )
+
+    total = query.count()
+    sessions = (
+        query.order_by(CrawlSession.created_at.desc(), CrawlSession.id.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+    response.headers["X-Total-Count"] = str(total)
 
     return sessions
 

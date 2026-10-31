@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
@@ -107,16 +108,38 @@ def create_channel(channel: ChannelCreate, db: Session = Depends(get_db)):
 
 @router.get("/", response_model=List[ChannelWithStats])
 def list_channels(
+    response: Response,
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     crawl_enabled: Optional[bool] = None,
+    sort_by: Optional[str] = Query(
+        None,
+        description="Optional sort: 'name' (A–Z) or 'added' (newest first). Omit to keep the default order.",
+    ),
     db: Session = Depends(get_db)
 ):
-    """List all channels with pagination"""
+    """List all channels with pagination.
+
+    The total matching rows is returned in the ``X-Total-Count`` header.
+    ``sort_by`` is optional so existing callers keep the previous order.
+    """
     query = db.query(Channel)
 
     if crawl_enabled is not None:
         query = query.filter(Channel.crawl_enabled == crawl_enabled)
+
+    if sort_by == "":
+        sort_by = None
+    if sort_by not in (None, "name", "added"):
+        raise HTTPException(status_code=400, detail="sort_by must be 'name' or 'added'")
+
+    total = query.count()
+    response.headers["X-Total-Count"] = str(total)
+
+    if sort_by == "name":
+        query = query.order_by(func.lower(Channel.channel_name).asc(), Channel.id.asc())
+    elif sort_by == "added":
+        query = query.order_by(Channel.created_at.desc(), Channel.id.desc())
 
     channels = query.offset(skip).limit(limit).all()
 
