@@ -1,52 +1,147 @@
 // Sessions Management JavaScript
 
+// Page size for the All, Recurrent, and New Session lists.
+const SESSION_PAGE_SIZE = 10;
+
 let activeWebSockets = {};
-let sessionChannelsData = [];  // cached channel list for sorting / auto-naming
+let sessionChannelsData = [];  // channels on the current New Session page
+let sessionChannelCache = {};  // id -> channel, so names survive page changes
+let selectedChannelIds = [];   // selections kept across New Session pages
+let renderingChannels = false;
+
+let currentSessionsPage = 0;
+let currentRecurringPage = 0;
+let currentChannelPage = 0;
+let sessionsLoadToken = 0;
+let recurringLoadToken = 0;
+let channelLoadToken = 0;
 
 $(document).ready(function() {
     loadSessions();
     loadChannelsForSession();
     loadRecurringSessions();
 
-    // Filter change
+    // Filter change — keep the status filter, start back at the first page
     $('#statusFilter').change(function() {
-        loadSessions();
+        currentSessionsPage = 0;
+        loadSessions(0);
     });
 
-    // Channel list sorting (feature 8.1)
+    // Channel list sorting (feature 8.1) — server-side, reset to the first page
     $('#channelSort').change(function() {
-        renderChannelOptions();
+        currentChannelPage = 0;
+        loadChannelsForSession(0);
+    });
+
+    $('#sessionChannels').change(function() {
+        if (renderingChannels) return;
+        syncChannelSelectionFromSelect();
     });
 
     // Recurrence toggle (feature 10)
     $('#recurringToggle').change(function() {
         $('#recurrenceOptions').toggle(this.checked);
     });
-    // Auto-refresh every 10 seconds
-    setInterval(loadSessions, 10000);
-    setInterval(loadRecurringSessions, 10000);
+    // Auto-refresh every 10 seconds, staying on the current page
+    setInterval(function() { loadSessions(); }, 10000);
+    setInterval(function() { loadRecurringSessions(); }, 10000);
 });
 
-// Active recurring sessions panel (feature 11)
-function loadRecurringSessions() {
-    $.get('/api/sessions', function(data) {
-        // Recurring templates: sessions with an interval set that aren't child runs
-        const recurring = data.filter(s => s.recurrence_hours && !s.parent_session_id);
+function refreshSessionLists() {
+    loadSessions();
+    loadRecurringSessions();
+}
+
+function totalFromHeader(xhr, count, page, pageSize) {
+    const raw = xhr && xhr.getResponseHeader ? xhr.getResponseHeader('X-Total-Count') : null;
+    const parsed = parseInt(raw, 10);
+    if (!isNaN(parsed) && parsed >= 0) {
+        return parsed;
+    }
+    if (count >= pageSize) {
+        return (page + 2) * pageSize;
+    }
+    return page * pageSize + count;
+}
+
+// Bootstrap pagination matching the videos and channels lists.
+function renderPagination(listId, currentPage, total, pageSize, callbackName) {
+    const container = $('#' + listId);
+    container.empty();
+    if (!total || total < 1) {
+        return;
+    }
+
+    const totalPages = Math.ceil(total / pageSize);
+    const page = Math.max(0, Math.min(currentPage, totalPages - 1));
+    const hasPrevious = page > 0;
+    const hasNext = page < totalPages - 1;
+    const windowSize = 5;
+    let start = Math.max(0, page - 2);
+    let end = Math.min(totalPages - 1, start + windowSize - 1);
+    start = Math.max(0, end - windowSize + 1);
+
+    let html = '';
+    if (hasPrevious) {
+        html += `<li class="page-item"><a class="page-link" href="#" onclick="${callbackName}(${page - 1}); return false;">Previous</a></li>`;
+    } else {
+        html += '<li class="page-item disabled"><span class="page-link">Previous</span></li>';
+    }
+
+    for (let i = start; i <= end; i++) {
+        if (i === page) {
+            html += `<li class="page-item active"><span class="page-link">${i + 1}</span></li>`;
+        } else {
+            html += `<li class="page-item"><a class="page-link" href="#" onclick="${callbackName}(${i}); return false;">${i + 1}</a></li>`;
+        }
+    }
+
+    if (hasNext) {
+        html += `<li class="page-item"><a class="page-link" href="#" onclick="${callbackName}(${page + 1}); return false;">Next</a></li>`;
+    } else {
+        html += '<li class="page-item disabled"><span class="page-link">Next</span></li>';
+    }
+
+    container.html(html);
+}
+
+// Active recurring sessions panel (feature 11). Server filters templates and pages them.
+function loadRecurringSessions(page) {
+    if (typeof page === 'number' && !isNaN(page)) {
+        currentRecurringPage = page;
+    }
+    const requestToken = ++recurringLoadToken;
+    const skip = currentRecurringPage * SESSION_PAGE_SIZE;
+    const url = `/api/sessions?recurring=true&skip=${skip}&limit=${SESSION_PAGE_SIZE}`;
+
+    $.get(url, function(data, textStatus, xhr) {
+        if (requestToken !== recurringLoadToken) return;
         const container = $('#recurringSessionsList');
         if (!container.length) return;
-        container.empty();
 
-        if (recurring.length === 0) {
-            container.html('<p class="text-muted">No recurring sessions configured</p>');
+        const total = totalFromHeader(xhr, data.length, currentRecurringPage, SESSION_PAGE_SIZE);
+        const totalPages = Math.max(1, Math.ceil(total / SESSION_PAGE_SIZE));
+        if (currentRecurringPage > totalPages - 1) {
+            loadRecurringSessions(totalPages - 1);
             return;
         }
 
-        recurring.forEach(function(session) {
+        container.empty();
+        if (data.length === 0) {
+            container.html('<p class="text-muted">No recurring sessions configured</p>');
+            renderPagination('recurringSessionsPagination', currentRecurringPage, total, SESSION_PAGE_SIZE, 'loadRecurringSessions');
+            return;
+        }
+
+        data.forEach(function(session) {
             container.append(createRecurringCard(session));
         });
+        renderPagination('recurringSessionsPagination', currentRecurringPage, total, SESSION_PAGE_SIZE, 'loadRecurringSessions');
     }).fail(function() {
+        if (requestToken !== recurringLoadToken) return;
         const container = $('#recurringSessionsList');
         if (container.length) container.html('<p class="text-danger">Failed to load recurring sessions</p>');
+        $('#recurringSessionsPagination').empty();
     });
 }
 
@@ -69,10 +164,10 @@ function createRecurringCard(session) {
     }
 
     const toggleButton = session.recurrence_active
-        ? `<button class="btn btn-sm btn-outline-secondary" onclick="pauseRecurrence(${session.id}); loadRecurringSessions();">
+        ? `<button class="btn btn-sm btn-outline-secondary" onclick="pauseRecurrence(${session.id})">
                <i class="bi bi-pause-circle"></i> Pause
            </button>`
-        : `<button class="btn btn-sm btn-outline-success" onclick="resumeRecurrence(${session.id}); loadRecurringSessions();">
+        : `<button class="btn btn-sm btn-outline-success" onclick="resumeRecurrence(${session.id})">
                <i class="bi bi-play-circle"></i> Resume
            </button>`;
 
@@ -113,16 +208,34 @@ function createRecurringCard(session) {
     `;
 }
 
-function loadSessions() {
+function loadSessions(page) {
+    if (typeof page === 'number' && !isNaN(page)) {
+        currentSessionsPage = page;
+    }
+    const requestToken = ++sessionsLoadToken;
     const status = $('#statusFilter').val();
-    const url = status ? `/api/sessions?status=${status}` : '/api/sessions';
+    const skip = currentSessionsPage * SESSION_PAGE_SIZE;
+    let url = `/api/sessions?skip=${skip}&limit=${SESSION_PAGE_SIZE}`;
+    if (status) {
+        url += `&status=${encodeURIComponent(status)}`;
+    }
 
-    $.get(url, function(data) {
+    $.get(url, function(data, textStatus, xhr) {
+        if (requestToken !== sessionsLoadToken) return;
+
+        const total = totalFromHeader(xhr, data.length, currentSessionsPage, SESSION_PAGE_SIZE);
+        const totalPages = Math.max(1, Math.ceil(total / SESSION_PAGE_SIZE));
+        if (currentSessionsPage > totalPages - 1) {
+            loadSessions(totalPages - 1);
+            return;
+        }
+
         const container = $('#sessionsList');
         container.empty();
 
         if (data.length === 0) {
             container.html('<p class="text-muted">No sessions found</p>');
+            renderPagination('sessionsPagination', currentSessionsPage, total, SESSION_PAGE_SIZE, 'loadSessions');
             return;
         }
 
@@ -135,8 +248,11 @@ function loadSessions() {
                 connectWebSocket(session.id);
             }
         });
+        renderPagination('sessionsPagination', currentSessionsPage, total, SESSION_PAGE_SIZE, 'loadSessions');
     }).fail(function() {
+        if (requestToken !== sessionsLoadToken) return;
         $('#sessionsList').html('<p class="text-danger">Failed to load sessions</p>');
+        $('#sessionsPagination').empty();
     });
 }
 
@@ -274,44 +390,91 @@ function toggleRecurrenceCustom() {
     $('#recurrenceCustomWrap').toggle($('#recurrencePreset').val() === 'custom');
 }
 
-function loadChannelsForSession() {
-    $.get('/api/channels?limit=100', function(data) {
+// New Session modal channel list — 10 per page, sort preserved via the API.
+function loadChannelsForSession(page) {
+    if (typeof page === 'number' && !isNaN(page)) {
+        currentChannelPage = page;
+    }
+    const requestToken = ++channelLoadToken;
+    const sortMode = $('#channelSort').val() || 'name';
+    const skip = currentChannelPage * SESSION_PAGE_SIZE;
+    const url = `/api/channels?skip=${skip}&limit=${SESSION_PAGE_SIZE}&sort_by=${encodeURIComponent(sortMode)}`;
+
+    $.get(url, function(data, textStatus, xhr) {
+        if (requestToken !== channelLoadToken) return;
+
+        const total = totalFromHeader(xhr, data.length, currentChannelPage, SESSION_PAGE_SIZE);
+        const totalPages = Math.max(1, Math.ceil(total / SESSION_PAGE_SIZE));
+        if (total > 0 && currentChannelPage > totalPages - 1) {
+            loadChannelsForSession(totalPages - 1);
+            return;
+        }
+
         sessionChannelsData = data;
+        data.forEach(function(channel) {
+            sessionChannelCache[String(channel.id)] = channel;
+        });
         renderChannelOptions();
+        renderPagination('sessionChannelsPagination', currentChannelPage, total, SESSION_PAGE_SIZE, 'loadChannelsForSession');
+    }).fail(function() {
+        if (requestToken !== channelLoadToken) return;
+        $('#sessionChannels').empty().append('<option disabled>Failed to load channels</option>');
+        $('#sessionChannelsPagination').empty();
     });
 }
 
-// Render channel options in the current sort order (feature 8.1)
+// Render the current page of channels. Sort order comes from the API.
 function renderChannelOptions() {
     const select = $('#sessionChannels');
-    const sortMode = $('#channelSort').val() || 'name';
-    const channels = [...sessionChannelsData];
-
-    if (sortMode === 'added') {
-        // Date added = when the channel record was created (newest first)
-        channels.sort(function(a, b) {
-            return new Date(b.created_at || 0) - new Date(a.created_at || 0);
-        });
-    } else {
-        // Default: alphabetical by channel name
-        channels.sort(function(a, b) {
-            return (a.channel_name || '').localeCompare(b.channel_name || '');
-        });
-    }
-
+    renderingChannels = true;
     select.empty();
-    channels.forEach(function(channel) {
+    sessionChannelsData.forEach(function(channel) {
         const enabled = channel.crawl_enabled ? '' : ' (disabled)';
-        select.append(`<option value="${channel.id}">${channel.channel_name}${enabled}</option>`);
+        const selected = selectedChannelIds.indexOf(String(channel.id)) !== -1 ? ' selected' : '';
+        select.append(`<option value="${channel.id}"${selected}>${channel.channel_name}${enabled}</option>`);
     });
+    renderingChannels = false;
+}
+
+function syncChannelSelectionFromSelect() {
+    const visibleIds = sessionChannelsData.map(function(channel) {
+        return String(channel.id);
+    });
+    const selectedNow = {};
+    ($('#sessionChannels').val() || []).forEach(function(id) {
+        selectedNow[String(id)] = true;
+    });
+
+    selectedChannelIds = selectedChannelIds.filter(function(id) {
+        return visibleIds.indexOf(id) === -1 || selectedNow[id];
+    });
+    visibleIds.forEach(function(id) {
+        if (selectedNow[id] && selectedChannelIds.indexOf(id) === -1) {
+            selectedChannelIds.push(id);
+        }
+    });
+    updateChannelSelectionHint();
+}
+
+function updateChannelSelectionHint() {
+    const hint = $('#sessionChannelSelectionHint');
+    if (!hint.length) return;
+    const n = selectedChannelIds.length;
+    if (n === 0) {
+        hint.text('');
+        return;
+    }
+    hint.text(n === 1 ? '1 channel selected' : n + ' channels selected');
 }
 
 function createSession() {
     let sessionName = $('#sessionName').val();
     const sessionType = $('#sessionType').val();
-    const selectedChannels = $('#sessionChannels').val();
     const keywords = $('#sessionKeywords').val();
     const maxVideos = parseInt($('#maxVideos').val()) || 5;
+
+    syncChannelSelectionFromSelect();
+    const selectedChannels = selectedChannelIds.slice();
 
     if (!selectedChannels || selectedChannels.length === 0) {
         alert('Please select at least one channel');
@@ -344,7 +507,7 @@ function createSession() {
     // selected channel names + filter keywords + date + time.
     if (!sessionName || sessionName.trim() === '') {
         const channelNames = selectedChannels.map(function(id) {
-            const ch = sessionChannelsData.find(c => String(c.id) === String(id));
+            const ch = sessionChannelCache[String(id)];
             return ch ? ch.channel_name : `Channel ${id}`;
         });
         const now = new Date();
@@ -379,7 +542,17 @@ function createSession() {
             alert('Session created successfully!');
             $('#newSessionModal').modal('hide');
             $('#newSessionForm')[0].reset();
-            loadSessions();
+            $('#recurrenceOptions').hide();
+            $('#recurrenceCustomWrap').hide();
+            selectedChannelIds = [];
+            updateChannelSelectionHint();
+            currentSessionsPage = 0;
+            if (recurrenceHours) {
+                currentRecurringPage = 0;
+            }
+            currentChannelPage = 0;
+            loadChannelsForSession(0);
+            refreshSessionLists();
         },
         error: function(xhr) {
             alert('Failed to create session: ' + (xhr.responseJSON?.detail || 'Unknown error'));
@@ -441,7 +614,7 @@ function pauseRecurrence(sessionId) {
         url: `/api/sessions/${sessionId}/recurrence/pause`,
         type: 'PUT',
         success: function() {
-            loadSessions();
+            refreshSessionLists();
         },
         error: function(xhr) {
             alert('Error pausing recurrence: ' + (xhr.responseJSON?.detail || xhr.statusText));
@@ -454,7 +627,7 @@ function resumeRecurrence(sessionId) {
         url: `/api/sessions/${sessionId}/recurrence/resume`,
         type: 'PUT',
         success: function() {
-            loadSessions();
+            refreshSessionLists();
         },
         error: function(xhr) {
             alert('Error resuming recurrence: ' + (xhr.responseJSON?.detail || xhr.statusText));
@@ -472,7 +645,7 @@ function cancelSession(sessionId) {
         method: 'PUT',
         success: function() {
             alert('Session cancelled successfully');
-            loadSessions();
+            refreshSessionLists();
         },
         error: function(xhr) {
             alert('Failed to cancel session: ' + (xhr.responseJSON?.detail || 'Unknown error'));
@@ -490,7 +663,7 @@ function deleteSession(sessionId) {
         method: 'DELETE',
         success: function() {
             alert('Session deleted successfully');
-            loadSessions();
+            refreshSessionLists();
         },
         error: function(xhr) {
             alert('Failed to delete session: ' + (xhr.responseJSON?.detail || 'Unknown error'));
